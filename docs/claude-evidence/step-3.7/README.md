@@ -47,12 +47,16 @@ parameters are null. R-01 and R-09 are recommended out of scope, each with a `sc
   output files are byte-identical after the rerun.
 - [supplier-name-check.txt](supplier-name-check.txt): every text field and the register were
   checked against all 1,926 supplier names (printed and normalised, kept and excluded spend and
-  notices). No supplier under review is named. The 10 hits are three tokens:
-  - "beyond" and "choice": ordinary English that matches a one-word supplier name.
-  - "Ofsted", in R-09's impact justification: it quotes the council's own impact descriptor
-    (strategy p.14, "External agency criticism – EG Auditor, Ofsted"). It refers to Ofsted as a
-    regulator, but Ofsted is also a payee in the spend data (Professional Fees). Rewording it to
-    "an inspectorate" would make the check clean. This is left for the auditor to decide.
+  notices). No supplier under review is named.
+  - The first check also hit "Ofsted" in R-09's impact justification. It quoted the council's own
+    impact descriptor (strategy p.14), but Ofsted is also a payee (Professional Fees). At the
+    auditor's request, before any decision was recorded, the risk-assessor changed that one
+    phrase to "an inspectorate". A diff against the earlier file shows exactly one field
+    changed (`$.risks[8].impact.justification`), and "Ofsted" no longer appears in the ratings
+    or the register.
+  - The remaining 8 hits are two ordinary words: "beyond" (in "beyond the first payment") and
+    "choice" (in "choice of provider"). They match one-word suppliers ("Beyond" and "Choice LTD")
+    but do not name them.
 - [check-quotes.txt](check-quotes.txt): all 22 register rule excerpts match `rules.json`
   (0 failures; the 14 mismatches from the stale draft are gone).
 - [gate.txt](gate.txt): the gate correctly blocks planning, because no decisions are recorded.

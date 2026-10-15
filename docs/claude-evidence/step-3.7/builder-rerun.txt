@@ -1,4 +1,4 @@
-$ .venv/bin/python .claude/skills/risk-assessment/build_register.py outputs/risk-ratings.json   # rerun by main session
+$ .venv/bin/python .claude/skills/risk-assessment/build_register.py outputs/risk-ratings.json   # rerun by main session after the Ofsted rewording
 SUMMARY risks kept: 9, excluded by validation: 0, failures=0, warnings=0, gate=open
 exit=0
 

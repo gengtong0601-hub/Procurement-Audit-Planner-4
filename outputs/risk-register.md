@@ -184,7 +184,7 @@ Individually chosen care and education placements are exempt from competition, b
 
 **Likelihood.** The reasons for the choice of provider must be kept on the case notes [rule:CPR-81]; spend data cannot see case notes, so this is rated on the rule and the gap. Placement-tagged spend is the largest tag in the data [metric:$.population.tags.care_or_education_placement.gbp] and dominates the split and duplicate indicators, which periodic fees largely explain. Personal Budgets (Direct Payments) received Limited Assurance [history:AUD-16]: adjacent adverse evidence, not a repeat finding on this theme, so no uplift applies, but it lifts the rule-only rubric one to two, the council's Unlikely descriptor [history:LIKELIHOOD-2]. Purchase of residential and nursing care received Reasonable Assurance [history:AUD-18].
 
-**Impact.** A poorly justified provider choice affects vulnerable people and value for money; the reasonable worst case fits the council's Medium descriptor: external agency criticism, for example by Ofsted, and reasonable possibility of regulatory interest [history:IMPACT-3]. No consequence data is available.
+**Impact.** A poorly justified provider choice affects vulnerable people and value for money; the reasonable worst case fits the council's Medium descriptor: external agency criticism, for example by an inspectorate, and reasonable possibility of regulatory interest [history:IMPACT-3]. No consequence data is available.
 
 **Proposed focus.** If brought into scope, sample placement-tagged payments, prioritising children's and education placements outside the recent care-purchasing audit, and check the recorded reasons for the provider choice.
 
