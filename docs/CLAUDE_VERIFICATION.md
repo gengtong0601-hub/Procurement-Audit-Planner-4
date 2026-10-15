@@ -1,5 +1,7 @@
 # 发给 teammate：Claude Code 验证与人工审批清单
 
+> **状态更新（2026-10-15）：** 本清单列出的步骤已在 Claude Code 中完成：人工审批由 Tony 完成，最终签核也已完成。第 5 课的队友消息由主会话原样转发，不是原生 Agent teams 消息，原因与转发日志见 `docs/claude-evidence/step-5/`。完成确认见 [README](../README.md#guide-completion-confirmation)。以下为原清单，保留备查。
+
 这份文件记录**仍需真人在 Claude Code 中执行、观察和保存证据的部分**。
 仓库里的文件和本地脚本测试不等于已经执行过 Claude 原生 Skills、Sub-agents
 或 Agent teams。本项目没有冒充 Claude 运行记录，没有替真实审计人批准风险或签核。

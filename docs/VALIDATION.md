@@ -1,5 +1,10 @@
 # Local validation record
 
+> **Superseded (2026-10-15):** This is the Codex-era local record from before the Claude Code
+> run. Every output it describes has since been regenerated in Claude Code. For current results
+> and per-step evidence, see the [README](../README.md#guide-completion-confirmation) and
+> `docs/claude-evidence/`.
+
 Prepared on 2026-10-05 (America/Los_Angeles). This record covers the local
 implementation, not native Claude execution, a live API run or deployment.
 

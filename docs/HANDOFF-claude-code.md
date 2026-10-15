@@ -1,5 +1,7 @@
 # 交接给 Claude Code：审阅结论与下一步
 
+> **状态更新（2026-10-15）：** 本文件第三节的两个问题已在提交 `436c77a` 修复，第四节的教程步骤已在 Claude Code 中全部完成并签核。最新情况和证据见 [README](../README.md#guide-completion-confirmation) 与 `docs/claude-evidence/`。以下为当时的交接原文，保留备查。
+
 > 2026-10-15 审阅本项目后写成。在 Claude Code 里打开本文件夹后，先让它读这份文件（见第五节的开场提示词）。
 
 ## 一、在 Claude Code 里开始
