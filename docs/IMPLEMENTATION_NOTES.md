@@ -46,3 +46,12 @@ The number QA is a guide-style cross-check of values, not a proof that every
 figure is attached to the correct concept. Final auditors still review meaning,
 coverage, citations and sampling. Public award matching, annualisation and
 repeat patterns are indicators with declared limitations, not allegations.
+
+Harness prepared mode, after the Claude Code run (2026-10-15):
+
+- Each run's copy of `risk-ratings.json` drops the root `revision` block, so a web reviewer starts
+  from the pre-decision judgments. The root outputs are never modified.
+- When an in-scope risk cites no contract rule (it may rest on metrics and history alone), the
+  prepared demo plan pairs its control with a fixed clause per sample source
+  (`PREPARED_RULE_FOR_SOURCE`, currently duplicates → clause 10.1, as the native planner chose).
+  The control text labels this as a teaching baseline for the reviewer to confirm.

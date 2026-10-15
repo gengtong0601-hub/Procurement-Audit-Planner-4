@@ -167,8 +167,7 @@ python3 -m venv .venv
 .venv/bin/python -m pytest -q --basetemp runtime/test-temp
 ```
 
-The builders are deterministic: rerunning them leaves the outputs byte-identical. The test suite
-has 48 tests, of which 47 pass. The one failure is a Part B harness test, described below.
+The builders are deterministic: rerunning them leaves the outputs byte-identical. All 48 tests pass.
 
 ## Part B: independent harness
 
@@ -177,14 +176,12 @@ builds and validates every output; an optional Claude Messages API provider supp
 agent judgments in live mode. Reviewer decisions and sign-off come only from the person using
 it. See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for running, deploying and the smoke test.
 
-Status: implemented and runnable locally, **not yet deployed**. One harness test currently fails
-in the prepared-evidence mode, for two known reasons that are being fixed:
-
-1. It copies the now-revised `risk-ratings.json` (with its revision block) into a fresh run that
-   has no decisions.
-2. Its demo plan assumes every risk cites a rule, but R-04 legitimately does not.
-
-The deployed URL will be added above once the hosted end-to-end run passes.
+Status: implemented and runnable locally, **not yet deployed**. The prepared-evidence mode was
+fixed for the signed-off outputs in two ways. Each run now starts from the pre-decision judgments,
+because the root revision block is dropped in the run's own copy. A risk that cites no rule
+(R-04) is paired, as a labelled teaching baseline, with the clause the native planner chose
+(10.1). All 48 tests pass. The deployed URL will be added above once the hosted end-to-end run
+passes.
 
 ## Repository layout
 

@@ -67,6 +67,10 @@ def create_workspace(run, mode):
     (run / 'outputs').mkdir()
     for name in required:
         shutil.copy2(ROOT / 'outputs' / name, run / 'outputs' / name)
+    # A run starts before any decision: drop the root revision so the reviewer's own decisions apply.
+    ratings = read_json(run / 'outputs/risk-ratings.json')
+    if ratings.pop('revision', None) is not None:
+        write_json(run / 'outputs/risk-ratings.json', ratings)
     shutil.copytree(ROOT / 'outputs/analytics-full', run / 'outputs/analytics-full')
     shutil.copy2(ROOT / 'CLAUDE.md', run / 'CLAUDE.md')
     write_json(run / 'state.json', {'mode': mode, 'stage': 'preparing', 'error': None})
@@ -217,6 +221,12 @@ def apply_decisions(run, payload):
     event(run, 'human', 'Reviewer explicitly decided every risk; validated revision closed the scope gate.')
 
 
+# Prepared mode only: the contract-rule clause a control rests on when the risk itself cites
+# no rule. Duplicate payments rest on written evidence of each purchase (clause 10.1), the
+# rule the native planner chose for the same risk.
+PREPARED_RULE_FOR_SOURCE = {'duplicates.csv': '10.1'}
+
+
 def prepared_plan(run):
     """Transparent rule-based teaching baseline; never represented as a live agent."""
     ratings = read_json(run / 'outputs/risk-ratings.json')
@@ -227,8 +237,14 @@ def prepared_plan(run):
         if not r.get('recommend_in_scope', True):
             continue
         refs = list(dict.fromkeys(re.findall(r'\[rule:(CPR-\d+)\]', json.dumps(r))))
+        paired = None
         if not refs:
-            raise ValueError(r['id'] + ': prepared plan needs a cited rule.')
+            # A risk may rest on metrics and history alone, but every control must cite a rule.
+            clause = PREPARED_RULE_FOR_SOURCE.get(r.get('sample_source'))
+            paired = next((x for x in rules if x.get('clause') == clause), None)
+            if not paired:
+                raise ValueError(r['id'] + ': prepared plan needs a cited rule.')
+            refs = [paired['rule_id']]
         rule = by_id[refs[0]]
         used.update(refs)
         num = r['id'].split('-')[1]
@@ -238,7 +254,8 @@ def prepared_plan(run):
         if recipe['kind'] != 'none':
             recipe['n'] = n
         risks.append({'id': r['id'], 'objective': r['proposed_focus'],
-                      'controls': [{'id': control, 'control': r.get('prepared_control', 'Apply the sourcing route, authorisation and documentation requirements specified by the cited procurement rule.'), 'owner': rule.get('approver') or 'Responsible officer; confirm with council', 'cites': ['rule:' + x for x in refs]}],
+                      'controls': [{'id': control, 'control': r.get('prepared_control', 'Apply the sourcing route, authorisation and documentation requirements specified by the cited procurement rule.')
+                                    + (f" Teaching baseline: the risk cites no rule, so the harness pairs it with clause {paired['clause']} for the reviewer to confirm." if paired else ''),'owner': rule.get('approver') or 'Responsible officer; confirm with council', 'cites': ['rule:' + x for x in refs]}],
                       'tests': [{'id': test, 'control': control,
                                  'step': r.get('prepared_test', 'Obtain the records for the sampled procurement and compare its approvals, competition evidence and recorded rationale with the cited rule. Record exceptions for investigation without presuming wrongdoing.'),
                                  'evidence': r.get('prepared_evidence', 'Procurement file, original invoices, approvals, quotation records and current contract register'),
