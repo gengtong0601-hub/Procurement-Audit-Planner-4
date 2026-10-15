@@ -1,0 +1,6 @@
+$ .venv/bin/python .claude/skills/audit-program/build_pack.py --gate   # after decisions, before step 4.3
+FAIL  gate: the register is not a revision; re-run the risk-assessor so the decisions are applied
+FAIL  gate: human decisions are incomplete or the revision was not validated
+FAIL  gate: auditor-comments.md changed after revision validation
+FAIL  gate: approved evidence changed after revision validation: auditor-comments.md
+exit=1
