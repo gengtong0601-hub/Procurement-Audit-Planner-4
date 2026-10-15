@@ -43,7 +43,7 @@ def main():
         if not proof.get("ready") or not proof.get("sha256"):
             fails.append("pack builder validation did not pass")
         for name, expected in proof.get("sha256", {}).items():
-            path = Path(name)
+            path = validation.parent / name  # keys are relative to the record's folder
             if not path.is_file() or hashlib.sha256(path.read_bytes()).hexdigest() != expected:
                 fails.append(f"pack artifact changed after validation: {path.name}")
     IN = ROOT / "outputs"  # the register, decisions and inputs always come from the project

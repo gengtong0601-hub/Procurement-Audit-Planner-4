@@ -5,9 +5,12 @@ Usage: verify_history.py HISTORY_JSON COMMITTEE_DIR
 
 Checks: JSON shape; every item (anywhere in the tree) that has a `source`
 also has an integer `pdf_page`; the source file exists; every `quote` is
-found on the stated page after normalisation (whitespace collapsed, bullet
+found on the stated page after normalisation (whitespace ignored, bullet
 glyphs and page footers ignored, quote/dash glyphs unified).
-Exit 0 with ALL CHECKS PASSED when clean.  Uses `pdftotext` when available, otherwise pypdf.
+Exit 0 with ALL CHECKS PASSED when clean.  Reads each PDF with every available
+extractor (pypdf, plus `pdftotext` plain and -layout when on PATH); a quote is
+found when any of them has it on the page, since they differ in word spacing
+and table reading order.
 """
 import json, re, shutil, subprocess, sys
 from pathlib import Path
@@ -25,15 +28,32 @@ def normalise(t: str) -> str:
     return re.sub(r"\s+", " ", t).strip()
 
 
-def pages(pdf: Path) -> list[str]:
-    if not shutil.which("pdftotext"):
+def compact(t: str) -> str:
+    return normalise(t).replace(" ", "")
+
+
+def pages(pdf: Path) -> list[list[str]]:
+    """One list of whitespace-free page texts per available extractor."""
+    renderings = []
+    try:
         from pypdf import PdfReader
-        return [normalise(p.extract_text() or "") for p in PdfReader(pdf).pages]
-    out = subprocess.run(["pdftotext", str(pdf), "-"], capture_output=True, text=True, check=True).stdout
-    ps = out.split("\f")
-    if ps and not ps[-1].strip():
-        ps.pop()
-    return [normalise(p) for p in ps]
+        renderings.append([p.extract_text() or "" for p in PdfReader(pdf).pages])
+    except ImportError:
+        pass
+    if shutil.which("pdftotext"):
+        for flags in ([], ["-layout"]):
+            out = subprocess.run(["pdftotext", *flags, str(pdf), "-"], capture_output=True, text=True, check=True).stdout
+            ps = out.split("\f")
+            if ps and not ps[-1].strip():
+                ps.pop()
+            renderings.append(ps)
+    if not renderings:
+        sys.exit("ERROR: need pdftotext on PATH or the pypdf package installed")
+    return [[compact(p) for p in r] for r in renderings]
+
+
+def on_page(quote: str, renderings: list[list[str]], page: int) -> bool:
+    return any(page <= len(r) and quote in r[page - 1] for r in renderings)
 
 
 def walk(node, path="$"):
@@ -57,7 +77,7 @@ def main(hist: str, cdir: str) -> int:
     for k in TOP:
         if k not in doc:
             errors.append(f"top-level key missing: {k}")
-    cache: dict[str, list[str]] = {}
+    cache: dict[str, list[list[str]]] = {}
     n_items = n_quotes = 0
     for path, d in walk(doc):
         src = d.get("source")
@@ -76,24 +96,25 @@ def main(hist: str, cdir: str) -> int:
             continue
         if src not in cache:
             cache[src] = pages(f)
-        ps = cache[src]
-        if not 1 <= page <= len(ps):
-            errors.append(f"{path}: pdf_page {page} out of range 1..{len(ps)} for {src}")
+        rs = cache[src]
+        n_pages = max(len(r) for r in rs)
+        if not 1 <= page <= n_pages:
+            errors.append(f"{path}: pdf_page {page} out of range 1..{n_pages} for {src}")
             continue
         q = d.get("quote")
         if q is None:
             continue
         n_quotes += 1
-        nq = normalise(str(q))
-        if len(nq) < 12:
-            errors.append(f"{path}: quote too short ({len(nq)} chars)")
-        elif nq in ps[page - 1]:
+        nq = compact(str(q))
+        if len(normalise(str(q))) < 12:
+            errors.append(f"{path}: quote too short ({len(normalise(str(q)))} chars)")
+        elif on_page(nq, rs, page):
             pass
         else:
-            hits = [i + 1 for i, p in enumerate(ps) if nq in p]
+            hits = [n for n in range(1, n_pages + 1) if on_page(nq, rs, n)]
             if hits:
                 errors.append(f"{path}: quote is on page(s) {hits}, not pdf_page {page}: {q[:60]!r}…")
-            elif nq in " ".join(ps):
+            elif any(nq in "".join(r) for r in rs):
                 errors.append(f"{path}: quote straddles a page boundary: {q[:60]!r}…")
             else:
                 errors.append(f"{path}: quote NOT FOUND in {src}: {q[:60]!r}…")

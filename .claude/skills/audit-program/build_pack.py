@@ -28,9 +28,14 @@ Renders planning-memo.md, risk-control-matrix.md and audit-program.md
 figure the builder itself computed, so the QA number check can trace them.
 Exit 0 when no failures; exit 1 otherwise.
 """
-import argparse, csv, datetime, hashlib, json, re, sys
+import argparse, csv, datetime, hashlib, json, os, re, sys
 from collections import OrderedDict
 from pathlib import Path
+
+
+def proof_key(path, base):
+    """Hash-record key: the path relative to the record's folder, so records survive moving the project."""
+    return Path(os.path.relpath(Path(path).resolve(), Path(base).resolve())).as_posix()
 
 CITE_RE = re.compile(r"\[(rule|metric|history):((?:[^\[\]]|\[\d+\])+)\]")
 PH_RE = re.compile(r"\{\{(\$[^}]+)\}\}")
@@ -307,10 +312,10 @@ def main():
             fails.append("gate: human decisions are incomplete or the revision was not validated")
         for path in (Path(a.ratings), Path(a.register), Path(a.comments), Path(a.rules), Path(a.analytics)):
             actual = hashlib.sha256(path.read_bytes()).hexdigest()
-            if evidence.get("sha256", {}).get(str(path.resolve())) != actual:
+            if evidence.get("sha256", {}).get(proof_key(path, evidence_path.parent)) != actual:
                 fails.append(f"gate: {path.name} changed after revision validation")
         for name, expected in evidence.get("sha256", {}).items():
-            path = Path(name)
+            path = evidence_path.parent / name
             if not path.is_file() or hashlib.sha256(path.read_bytes()).hexdigest() != expected:
                 fails.append(f"gate: approved evidence changed after revision validation: {path.name}")
 
@@ -592,7 +597,7 @@ def main():
     proof_paths = [Path(a.plan), Path(a.rules), Path(a.analytics), Path(a.ratings), Path(a.register), Path(a.comments)]
     proof_paths += [Path(a.out_dir) / name for name in ("planning-memo.md", "risk-control-matrix.md", "audit-program.md", "pack-figures.json")]
     proof_paths += sorted(samples_dir.glob("T-*.csv"))
-    validation_path.write_text(json.dumps({"ready": not fails, "sha256": {str(p.resolve()): hashlib.sha256(p.read_bytes()).hexdigest() for p in proof_paths}}, indent=2) + "\n")
+    validation_path.write_text(json.dumps({"ready": not fails, "sha256": {proof_key(p, validation_path.parent): hashlib.sha256(p.read_bytes()).hexdigest() for p in proof_paths}}, indent=2) + "\n")
     for w in warns: print("WARN ", w)
     for f in fails: print("FAIL ", f)
     print(f"\nscope: {len(approved)} approved risks planned, {len(out_of_scope)} not in scope; controls: {n_controls}; tests: {n_tests}; "

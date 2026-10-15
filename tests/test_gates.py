@@ -2,6 +2,7 @@
 import copy
 import importlib.util
 import json
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -130,6 +131,19 @@ class GateTests(unittest.TestCase):
         with (self.out / 'auditor-comments.md').open('a') as f:
             f.write('\nChanged after validation\n')
         self.assertNotEqual(self.gate().returncode, 0)
+
+    def test_closed_gate_survives_copying_the_project(self):
+        self.assertEqual(self.build().returncode, 0)
+        self.decide()
+        self.ratings['revision'] = {'number': 1, 'changes': []}
+        self.put('risk-ratings.json', self.ratings)
+        self.assertEqual(self.build().returncode, 0)
+        keys = json.loads((self.out / 'gate-evidence.json').read_text())['sha256']
+        self.assertFalse([k for k in keys if Path(k).is_absolute()], keys)
+        with tempfile.TemporaryDirectory(prefix='gate-clone-', dir=ROOT / 'tests') as other:
+            self.out = Path(shutil.copytree(self.out, Path(other) / 'outputs'))
+            result = self.gate()
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
     def test_changed_source_evidence_invalidates_scope_approval(self):
         self.assertEqual(self.build().returncode, 0)

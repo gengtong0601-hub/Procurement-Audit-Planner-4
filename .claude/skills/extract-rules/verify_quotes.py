@@ -9,13 +9,16 @@ Checks
   3. rule_ids are unique and sequential (CPR-01, CPR-02, ...).
   4. Every threshold_*_ref names a key in `parameters`.
   5. Every verbatim_quote appears in the PDF text after light normalisation
-     (whitespace collapsed, page footers and bullet glyphs removed, quote/dash
+     (whitespace ignored, page footers and bullet glyphs removed, quote/dash
      glyphs unified).
   6. The rule's `page` matches the page on which the quote was found.
   7. Every excluded entry has clause, page and reason.
 
 Exit 0 and print ALL CHECKS PASSED when clean; exit 1 otherwise.
-Requires `pdftotext` (poppler) on PATH, or the `pypdf` package as a fallback.
+Reads the PDF with every available extractor (the `pypdf` package, plus
+`pdftotext` plain and -layout when poppler is on PATH). They differ in word
+spacing and table reading order, so a quote counts as found when any of them
+has it on the page; installing poppler never turns a pass into a failure.
 """
 import json
 import re
@@ -52,20 +55,26 @@ GLYPHS = str.maketrans({
 })
 
 
-def pdf_pages(pdf: Path) -> list[str]:
-    if shutil.which("pdftotext"):
-        out = subprocess.run(
-            ["pdftotext", str(pdf), "-"], capture_output=True, text=True, check=True
-        ).stdout
-        pages = out.split("\f")
-        if pages and not pages[-1].strip():
-            pages.pop()
-        return pages
+def pdf_renderings(pdf: Path) -> dict[str, list[str]]:
+    """Page texts from each available extractor, keyed by extractor name."""
+    renderings = {}
     try:
         from pypdf import PdfReader  # type: ignore
+        renderings["pypdf"] = [p.extract_text() or "" for p in PdfReader(str(pdf)).pages]
     except ImportError:
+        pass
+    if shutil.which("pdftotext"):
+        for flags in ([], ["-layout"]):
+            out = subprocess.run(
+                ["pdftotext", *flags, str(pdf), "-"], capture_output=True, text=True, check=True
+            ).stdout
+            pages = out.split("\f")
+            if pages and not pages[-1].strip():
+                pages.pop()
+            renderings[" ".join(["pdftotext", *flags])] = pages
+    if not renderings:
         sys.exit("ERROR: need pdftotext on PATH or the pypdf package installed")
-    return [p.extract_text() or "" for p in PdfReader(str(pdf)).pages]
+    return renderings
 
 
 BULLET_RE = re.compile(r"[\ue000-\uf8ff\u2022\u25aa\u25cf\u2043]")
@@ -76,6 +85,11 @@ def normalise(text: str) -> str:
     text = text.translate(GLYPHS)
     text = BULLET_RE.sub(" ", text)
     return re.sub(r"\s+", " ", text).strip()
+
+
+def compact(text: str) -> str:
+    """Normalised text with all whitespace removed, for extractor-neutral matching."""
+    return normalise(text).replace(" ", "")
 
 
 def main(rules_path: str, pdf_path: str) -> int:
@@ -95,9 +109,11 @@ def main(rules_path: str, pdf_path: str) -> int:
     params = doc.get("parameters", {})
     excluded = doc.get("excluded", [])
 
-    pages = [normalise(p) for p in pdf_pages(Path(pdf_path))]
-    full = " ".join(pages)
-    print(f"PDF: {len(pages)} pages, {len(full)} normalised chars")
+    renderings = {name: [compact(p) for p in ps] for name, ps in pdf_renderings(Path(pdf_path)).items()}
+    n_pages = max(len(ps) for ps in renderings.values())
+    pages = [[ps[i] for ps in renderings.values() if i < len(ps)] for i in range(n_pages)]
+    fulls = ["".join(ps) for ps in renderings.values()]
+    print(f"PDF: {n_pages} pages, extractors: {', '.join(renderings)}")
     print(f"rules.json: {len(rules)} rules, {len(excluded)} excluded, {len(params)} parameters")
 
     seen_ids = set()
@@ -132,12 +148,12 @@ def main(rules_path: str, pdf_path: str) -> int:
 
         quote = r.get("verbatim_quote")
         if isinstance(quote, str):
-            q = normalise(quote)
-            if len(q) < 20:
-                errors.append(f"{rid}: quote too short to be a sentence ({len(q)} chars)")
-            hits = [n for n, p in enumerate(pages, start=1) if q in p]
+            if len(normalise(quote)) < 20:
+                errors.append(f"{rid}: quote too short to be a sentence ({len(normalise(quote))} chars)")
+            q = compact(quote)
+            hits = [n for n, variants in enumerate(pages, start=1) if any(q in v for v in variants)]
             if not hits:
-                if q in full:
+                if any(q in f for f in fulls):
                     errors.append(f"{rid}: quote straddles a page boundary; shorten it to one page")
                 else:
                     errors.append(f"{rid}: quote NOT FOUND in PDF text: {quote[:80]!r}…")

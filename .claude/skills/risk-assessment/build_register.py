@@ -5,6 +5,7 @@ Original implementation; see docs/IMPLEMENTATION_NOTES.md. Python stdlib only.
 import argparse
 import hashlib
 import json
+import os
 import re
 import sys
 from collections import OrderedDict
@@ -340,8 +341,9 @@ def run(a):
     if clean and not active:
         baseline_path.write_text(json.dumps({'risks': kept}, indent=2) + '\n')
     closed = clean and active and bool(rows) and all(r['decision'] in ('approve', 'amend', 'reject') for r in rows.values())
+    # Keys are relative to the gate file's folder, so the evidence survives moving or cloning the project.
     gate.write_text(json.dumps({'ready': closed, 'revision': rev.get('number'),
-                               'sha256': {str(p.resolve()): digest(p) for p in (rating_path, register, comments, Path(a.rules), Path(a.analytics), Path(a.history))},
+                               'sha256': {Path(os.path.relpath(p.resolve(), out.resolve())).as_posix(): digest(p) for p in (rating_path, register, comments, Path(a.rules), Path(a.analytics), Path(a.history))},
                                'reason': 'All recorded human decisions applied' if closed else 'Risk validation or human decisions incomplete'}, indent=2) + '\n')
     for f in failures:
         print('FAIL', f)
