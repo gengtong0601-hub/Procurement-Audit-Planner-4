@@ -30,7 +30,7 @@ None.
 
 ## Auditor sign-off
 
-Signed off by:
-Date:
-Decision (sign off / return to the team):
+Signed off by: Tony
+Date: 2026-10-15
+Decision (sign off / return to the team): sign off
 Comment:

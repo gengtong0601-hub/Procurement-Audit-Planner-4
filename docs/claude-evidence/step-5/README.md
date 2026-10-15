@@ -96,4 +96,11 @@ team run, not native agent-team messaging.**
 
 ## 5.8 Sign off
 
-Left to the auditor. Claude does not fill `outputs/review.md`'s sign-off block.
+The auditor gave the sign-off in chat and asked Claude to record it:
+
+> signed off by Tony, 日期 2026-10-15 decision sign off通过
+
+Claude wrote exactly those three fields into `outputs/review.md`: "Signed off by: Tony", "Date:
+2026-10-15" and "Decision: sign off". Comment is left blank because none was given. No other line of the file
+changed, and QA still reports READY FOR SIGN-OFF (4/4) after the edit. The auditor signed off v3
+as it stands, with challenges #5 and #11 recorded "for the auditor" in `outputs/challenges.md`.
