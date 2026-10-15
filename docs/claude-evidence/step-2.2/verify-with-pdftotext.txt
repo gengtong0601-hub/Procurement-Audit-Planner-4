@@ -1,0 +1,6 @@
+$ PATH=<poppler>:$PATH python .claude/skills/extract-rules/verify_quotes.py outputs/rules.json data/contract-rules.pdf
+PDF: 15 pages, extractors: pypdf, pdftotext, pdftotext -layout
+rules.json: 82 rules, 85 excluded, 4 parameters
+
+ALL CHECKS PASSED (82 rules, 85 excluded, 0 warning(s))
+exit=0
