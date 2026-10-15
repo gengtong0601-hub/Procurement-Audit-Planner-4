@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: procurement-audit-studio
+    runtime: docker
+    plan: starter
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: "8000"
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: ANTHROPIC_MODEL
+        sync: false
+      - key: HARNESS_ACCESS_TOKEN
+        sync: false
+    disk:
+      name: audit-runs
+      mountPath: /app/runtime
+      sizeGB: 1
