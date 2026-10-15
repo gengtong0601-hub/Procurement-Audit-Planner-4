@@ -25,8 +25,14 @@ The builder then rendered revision 1 and wrote `gate-evidence.json`.
   closed gate survives cloning the repository (fix from commit `436c77a`).
 - [gate.txt](gate.txt): **gate closed** (exit 0). In scope: R-02 (9), R-03 (12), R-04 (6),
   R-05 (4), R-06 (6), R-07 (6), R-08 (4). Not in scope: R-01, R-09 (approved as rated).
-- [pytest.txt](pytest.txt): 47 passed, 1 failed. The failure is the known Part B harness
-  test (its prepared demo needs a rule citation on R-04; see step 3.7).
+- [pytest.txt](pytest.txt): 47 passed, 1 failed, in the Part B harness test
+  `test_actual_prepared_outputs_end_to_end_in_isolated_copy`. Since this step it fails earlier
+  than in step 3.7: the harness's prepared mode copies the root `risk-ratings.json`, which now
+  carries the revision block, into a fresh run workspace without the auditor's decisions. The
+  builder then rightly refuses ("revision supplied but no human decisions are recorded"). Live
+  mode already drops the `revision` key; prepared mode must do the same, because a web reviewer
+  starts from the pre-decision judgments. The R-04 rule-citation issue from step 3.7 is still
+  behind it. Both are Part B harness fixes; the Part A outputs are correct.
 
 ## Still open for lesson 5
 
