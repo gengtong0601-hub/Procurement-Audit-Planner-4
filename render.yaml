@@ -2,18 +2,11 @@ services:
   - type: web
     name: procurement-audit-studio
     runtime: docker
-    plan: starter
+    # Free plan: no persistent disk, so runs reset on restart and the service sleeps when idle.
+    # Prepared-evidence mode needs no secrets. For live mode, add ANTHROPIC_API_KEY,
+    # ANTHROPIC_MODEL and HARNESS_ACCESS_TOKEN under Environment in the Render dashboard.
+    plan: free
     healthCheckPath: /health
     envVars:
       - key: PORT
         value: "8000"
-      - key: ANTHROPIC_API_KEY
-        sync: false
-      - key: ANTHROPIC_MODEL
-        sync: false
-      - key: HARNESS_ACCESS_TOKEN
-        sync: false
-    disk:
-      name: audit-runs
-      mountPath: /app/runtime
-      sizeGB: 1
