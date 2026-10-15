@@ -13,7 +13,7 @@ to investigate**, never wrongdoing by the council, a service or a supplier.
 
 | Part | Deliverable | Status |
 |---|---|---|
-| A | GitHub repository with this README | All 27 guide items completed in Claude Code (see [confirmation](#guide-completion-confirmation)). Repository URL: _to be added when published_ |
+| A | GitHub repository with this README | All 27 guide items completed in Claude Code (see [confirmation](#guide-completion-confirmation)). Repository: https://github.com/gengtong0601-hub/Procurement-Audit-Planner-4 |
 | B | Deployed independent harness | Implemented in `harness/`; not yet deployed (see [Part B](#part-b-independent-harness)). Deployed URL: _to be added_ |
 
 ---
