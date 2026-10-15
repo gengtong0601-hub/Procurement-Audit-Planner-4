@@ -1,0 +1,4 @@
+$ .venv/bin/python -m pytest -q --basetemp runtime/test-temp
+E           ValueError: build_register.py stopped the workflow:
+FAILED tests/test_harness.py::ActualPreparedEvidenceTest::test_actual_prepared_outputs_end_to_end_in_isolated_copy
+1 failed, 47 passed in 21.38s

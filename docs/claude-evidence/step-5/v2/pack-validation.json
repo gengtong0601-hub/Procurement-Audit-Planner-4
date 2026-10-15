@@ -1,0 +1,24 @@
+{
+  "ready": true,
+  "sha256": {
+    "audit-plan.json": "7047329d8fac1b0e73347f3eba404e26e0a061a3b45584b972ac94016ac2875f",
+    "rules.json": "e7391cad3b9c4b50e831aa781f3daaf583b845cd3bb6238805d3b96379e911d5",
+    "analytics.json": "cef8d3668cd55040f30f7992c6285a140fd240eaaa58a1c61ddb27d420ada2fb",
+    "risk-ratings.json": "ed2f084b3458ca1e909b2f126b9bf3a31b40f4353d77af82b44a4171ef470ceb",
+    "risk-register.md": "0dc3a05c114fa83813160f2207cc42dbc2f29049496aac36ac82605e86dce8a7",
+    "auditor-comments.md": "024081a145578dadf047f6939fa88eb375a0b8597b8c9e7df95380647bb7e7f6",
+    "planning-memo.md": "6efba7641e222c5a35c10451fa950b04c0d1e2447d39e1afc4fc72b922ceaea6",
+    "risk-control-matrix.md": "0d87758a9996fa01c3a0bdea1918e63fc5010d00f64c924ffca6229a55fa0e08",
+    "audit-program.md": "77e3167fbee2a1e74611faabd075885c1df74a3dfd791910ae0b2a73c6ac658d",
+    "pack-figures.json": "47bf0fff8add51311e566b4b72c201011110f32f460c03ceb51da7bafe72e359",
+    "samples/T-02.1.csv": "52bf7ea099fcb83bdf98ef63ec414350f5b137cc72d6378584ca3bc4a68f686c",
+    "samples/T-03.1.csv": "e6dafddc9fd92e169990c284e385fd1e5ccad2386c5d183bc6f247a3f3756644",
+    "samples/T-03.3.csv": "bda0a6360fc457a87843ee7f781b654f10303e4300b5f7685c091f23e46741a3",
+    "samples/T-03.4.csv": "0952e1e059376ccd67763724ab07dcb4672c34ba23a99cd44d4172fb433849ae",
+    "samples/T-04.1.csv": "b451f5ada6852e40e19f7a5542efecf1edebabb21b775b5dd7eb11316af8d40c",
+    "samples/T-04.2.csv": "c43056e7bb6a734ea1f28dd9fafaf06b53e0f46901bd025cf6c84bada861ccb8",
+    "samples/T-05.1.csv": "4c762c9be80769bb8ffd3c5a3d9549cfc2b573f5526a678ca2e176659b20dc39",
+    "samples/T-06.1.csv": "261ec5c14817515fd9268fee03f7ad7eed548eee0a25979651ee69e4fcd03943",
+    "samples/T-08.1.csv": "9aaca28382c78281820e8048697c454a1d5694a410149ec61c6280307a09e9e1"
+  }
+}

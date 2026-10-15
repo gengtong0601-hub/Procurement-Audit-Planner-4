@@ -1,0 +1,14 @@
+test,item,group,row_id,source_file,sheet_row,pay_date,supplier,amount,service,narrative
+T-03.6,1,ANDY AND ES,Over500_2026_P03_-_published.xlsx:661,Over500_2026_P03_-_published.xlsx,,2026-06-08,ANDY AND ES LIMITED,59335.72,Education & SEND,Payment to contractor
+T-03.6,1,ANDY AND ES,Over500_2026_P04_-_published.xlsx:1283,Over500_2026_P04_-_published.xlsx,,2026-07-15,ANDY AND ES LIMITED,56941.82,Education & SEND,Payment to contractor
+T-03.6,1,ANDY AND ES,Over500_2026_P02_-_published.xlsx:670,Over500_2026_P02_-_published.xlsx,,2026-05-13,ANDY AND ES LIMITED,54881.31,Education & SEND,Payment to contractor
+T-03.6,2,ELIOR,Over500_2026_P02_-_published.xlsx:530,Over500_2026_P02_-_published.xlsx,,2026-05-27,Elior UK PLC,23694.03,Adult Social Care,Catering
+T-03.6,2,ELIOR,Over500_2026_P03_-_published.xlsx:440,Over500_2026_P03_-_published.xlsx,,2026-06-16,Elior UK PLC,23516.69,Adult Social Care,Catering
+T-03.6,2,ELIOR,Over500_2026_P04_-_published.xlsx:533,Over500_2026_P04_-_published.xlsx,,2026-07-28,Elior UK PLC,23173.08,Adult Social Care,Catering
+T-03.6,3,BBOWT,Over500_2026_P04_-_published.xlsx:589,Over500_2026_P04_-_published.xlsx,,2026-07-16,BBOWT,118027.50,Environment,Contributions
+T-03.6,3,BBOWT,Over500_2026_P04_-_published.xlsx:623,Over500_2026_P04_-_published.xlsx,,2026-07-16,BBOWT,25000.00,Environment,Payment to contractor
+T-03.6,3,BBOWT,Over500_2026_P02_-_published.xlsx:641,Over500_2026_P02_-_published.xlsx,,2026-05-21,BBOWT,1289.93,Environment,Contributions
+T-03.6,4,BRACKNELL FOREST BOROUGH CNCL,Over500_2026_P03_-_published.xlsx:2217,Over500_2026_P03_-_published.xlsx,,2026-06-10,BRACKNELL FOREST BOROUGH CNCL,130310.57,"Finance, Property & Procurement",Private Contractors
+T-03.6,5,ANCHOR PIPEWORK,Over500_2026_P02_-_published.xlsx:738,Over500_2026_P02_-_published.xlsx,,2026-05-20,ANCHOR PIPEWORK LIMITED,33148.00,"Finance, Property & Procurement",Payment to contractor
+T-03.6,5,ANCHOR PIPEWORK,Over500_2026_P03_-_published.xlsx:2406,Over500_2026_P03_-_published.xlsx,,2026-06-18,ANCHOR PIPEWORK LIMITED,33148.00,"Finance, Property & Procurement",Payment to contractor
+T-03.6,5,ANCHOR PIPEWORK,Over500_2026_P02_-_published.xlsx:23,Over500_2026_P02_-_published.xlsx,,2026-05-29,ANCHOR PIPEWORK LIMITED,10111.05,Adult Social Care,Corporate R&M

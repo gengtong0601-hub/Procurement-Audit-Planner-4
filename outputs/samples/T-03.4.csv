@@ -1,0 +1,24 @@
+test,item,group,row_id,source_file,sheet_row,pay_date,supplier,amount,service,narrative
+T-03.4,1,WOKINGHAM BOROUGH COUNCIL,Over500_2026_P03_-_published.xlsx:2143,Over500_2026_P03_-_published.xlsx,,2026-06-23,WOKINGHAM BOROUGH COUNCIL,95104.51,"Finance, Property & Procurement",Private Contractors
+T-03.4,1,WOKINGHAM BOROUGH COUNCIL,Over500_2026_P02_-_published.xlsx:2201,Over500_2026_P02_-_published.xlsx,,2026-05-15,WOKINGHAM BOROUGH COUNCIL,24416.73,"Finance, Property & Procurement",Private Contractors
+T-03.4,2,KPMG,Over500_2026_P03_-_published.xlsx:479,Over500_2026_P03_-_published.xlsx,,2026-06-29,KPMG,76405.00,Executive Director - Resources,External audit costs
+T-03.4,2,KPMG,Over500_2026_P02_-_published.xlsx:655,Over500_2026_P02_-_published.xlsx,,2026-05-19,KPMG,34250.00,"Finance, Property & Procurement",General Expenses
+T-03.4,2,KPMG,Over500_2026_P02_-_published.xlsx:568,Over500_2026_P02_-_published.xlsx,,2026-05-29,KPMG,8500.00,Executive Director - Resources,External audit costs
+T-03.4,3,SCOTTISH AND SOUTHERN,Over500_2026_P03_-_published.xlsx:730,Over500_2026_P03_-_published.xlsx,,2026-06-23,SCOTTISH & SOUTHERN,101258.24,Environment,Payment to contractor
+T-03.4,3,SCOTTISH AND SOUTHERN,Over500_2026_P04_-_published.xlsx:1282,Over500_2026_P04_-_published.xlsx,,2026-07-03,SCOTTISH & SOUTHERN,9502.74,Education & SEND,Payment to contractor
+T-03.4,4,EDUCATION SOFTWARE SOLUTIONS,Over500_2026_P02_-_published.xlsx:478,Over500_2026_P02_-_published.xlsx,,2026-05-20,Education Software Solutions Limited,95536.35,"Transformation, Customer & ICT",IT
+T-03.4,4,EDUCATION SOFTWARE SOLUTIONS,Over500_2026_P02_-_published.xlsx:479,Over500_2026_P02_-_published.xlsx,,2026-05-20,Education Software Solutions Limited,14794.00,"Transformation, Customer & ICT",IT
+T-03.4,5,CONTINENTAL LANDSCAPES,Over500_2026_P02_-_published.xlsx:178,Over500_2026_P02_-_published.xlsx,,2026-05-27,Continental Landscapes Ltd,67604.74,Environment,Grounds Maintenance
+T-03.4,5,CONTINENTAL LANDSCAPES,Over500_2026_P02_-_published.xlsx:198,Over500_2026_P02_-_published.xlsx,,2026-05-27,Continental Landscapes Ltd,12437.95,Environment,Grounds Maintenance
+T-03.4,5,CONTINENTAL LANDSCAPES,Over500_2026_P02_-_published.xlsx:180,Over500_2026_P02_-_published.xlsx,,2026-05-27,Continental Landscapes Ltd,12396.75,Environment,Grounds Maintenance
+T-03.4,6,MAISHA STAFFING SOLUTIONS,Over500_2026_P03_-_published.xlsx:2001,Over500_2026_P03_-_published.xlsx,,2026-06-10,MAISHA STAFFING SOLUTIONS LTD,18130.25,Children's Social Care,Private Contractors
+T-03.4,6,MAISHA STAFFING SOLUTIONS,Over500_2026_P04_-_published.xlsx:3716,Over500_2026_P04_-_published.xlsx,,2026-07-29,MAISHA STAFFING SOLUTIONS LTD,11100.00,Children's Social Care,Allowances for provision care
+T-03.4,6,MAISHA STAFFING SOLUTIONS,Over500_2026_P04_-_published.xlsx:3897,Over500_2026_P04_-_published.xlsx,,2026-07-30,MAISHA STAFFING SOLUTIONS LTD,8900.00,Children's Social Care,Allowances for provision care
+T-03.4,7,BLOOM PROCUREMENT SERVICES,Over500_2026_P03_-_published.xlsx:2148,Over500_2026_P03_-_published.xlsx,,2026-06-12,Bloom Procurement Services Ltd,100210.53,"Transformation, Customer & ICT",Private Contractors
+T-03.4,8,ROYAL BOROUGH OF WINDSOR AND MAIDENHEAD,Over500_2026_P02_-_published.xlsx:2197,Over500_2026_P02_-_published.xlsx,,2026-05-13,ROYAL BOROUGH OF WINDSOR & MAIDENHEAD,96245.28,"Finance, Property & Procurement",Private Contractors
+T-03.4,9,R AND A HAINES BUILDING CONTRACTORS,Over500_2026_P03_-_published.xlsx:688,Over500_2026_P03_-_published.xlsx,,2026-06-01,R&A Haines Building Contractors,20332.89,Development & Housing,Minor Works
+T-03.4,9,R AND A HAINES BUILDING CONTRACTORS,Over500_2026_P03_-_published.xlsx:742,Over500_2026_P03_-_published.xlsx,,2026-06-30,R&A Haines Building Contractors,18707.55,Development & Housing,Minor Works
+T-03.4,9,R AND A HAINES BUILDING CONTRACTORS,Over500_2026_P03_-_published.xlsx:740,Over500_2026_P03_-_published.xlsx,,2026-06-30,R&A Haines Building Contractors,16600.00,Development & Housing,Minor Works
+T-03.4,10,ARDENT,Over500_2026_P02_-_published.xlsx:2192,Over500_2026_P02_-_published.xlsx,,2026-05-21,ARDENT,11692.50,Environment,Private Contractors
+T-03.4,10,ARDENT,Over500_2026_P03_-_published.xlsx:696,Over500_2026_P03_-_published.xlsx,,2026-06-16,ARDENT,11188.00,Environment,Consultants
+T-03.4,10,ARDENT,Over500_2026_P04_-_published.xlsx:3189,Over500_2026_P04_-_published.xlsx,,2026-07-02,ARDENT,10713.75,Environment,Private Contractors

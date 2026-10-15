@@ -1,0 +1,4 @@
+7047329d8fac1b0e  outputs/audit-plan.json
+6efba7641e222c5a  outputs/planning-memo.md
+0d87758a9996fa01  outputs/risk-control-matrix.md
+77e3167fbee2a1e7  outputs/audit-program.md
