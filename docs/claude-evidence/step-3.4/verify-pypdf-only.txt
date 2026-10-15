@@ -1,0 +1,5 @@
+$ .venv/bin/python scripts/verify_history.py outputs/history.json data/committee   # pypdf only
+history.json: 172 sourced items, 172 quotes, 4 documents
+
+ALL CHECKS PASSED
+exit=0

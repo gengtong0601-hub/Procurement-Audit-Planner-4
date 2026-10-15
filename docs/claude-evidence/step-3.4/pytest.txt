@@ -1,0 +1,14 @@
+$ .venv/bin/python -m pytest -q --basetemp runtime/test-temp
+_____ HarnessTests.test_failed_revision_rolls_back_all_decision_artifacts ______
+self = <test_harness.HarnessTests testMethod=test_failed_revision_rolls_back_all_decision_artifacts>
+FAILED tests/test_harness.py::HarnessTests::test_all_rejected_is_valid_empty_scope
+FAILED tests/test_harness.py::HarnessTests::test_amend_must_change_scores_and_persist_only_valid_payload
+FAILED tests/test_harness.py::HarnessTests::test_api_token_path_and_malformed_json
+FAILED tests/test_harness.py::HarnessTests::test_blocked_status_remains_readable_and_metrics_render
+FAILED tests/test_harness.py::HarnessTests::test_failed_revision_rolls_back_all_decision_artifacts
+FAILED tests/test_harness.py::HarnessTests::test_malformed_test_identifier_blocks_pack_rendering
+FAILED tests/test_harness.py::HarnessTests::test_missing_duplicate_and_injected_decisions_rejected
+FAILED tests/test_harness.py::HarnessTests::test_prepared_end_to_end_and_tamper_blocks_signoff
+FAILED tests/test_harness.py::HarnessTests::test_provider_incomplete_or_malformed_response_rejected_without_network
+FAILED tests/test_harness.py::ActualPreparedEvidenceTest::test_actual_prepared_outputs_end_to_end_in_isolated_copy
+10 failed, 36 passed in 16.02s
