@@ -1,4 +1,8 @@
 {
+  "revision": {
+    "number": 1,
+    "changes": []
+  },
   "risks": [
     {
       "id": "R-01",

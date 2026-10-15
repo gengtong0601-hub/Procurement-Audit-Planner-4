@@ -1,13 +1,13 @@
 {
-  "ready": false,
-  "revision": null,
+  "ready": true,
+  "revision": 1,
   "sha256": {
-    "risk-ratings.json": "4168557a4ad8d7ba5f35f183d91a69cfed9be809956709da8ec638de290adca0",
-    "risk-register.md": "c5f913ac36282c1335e8b2f7295df676cd7ac406c83749e7f7f30b9eff8e131b",
-    "auditor-comments.md": "4403e2f635abce22b558c181b1f903af20d9a1082166f30795a42ccaf9c30fc1",
+    "risk-ratings.json": "ed2f084b3458ca1e909b2f126b9bf3a31b40f4353d77af82b44a4171ef470ceb",
+    "risk-register.md": "0dc3a05c114fa83813160f2207cc42dbc2f29049496aac36ac82605e86dce8a7",
+    "auditor-comments.md": "024081a145578dadf047f6939fa88eb375a0b8597b8c9e7df95380647bb7e7f6",
     "rules.json": "e7391cad3b9c4b50e831aa781f3daaf583b845cd3bb6238805d3b96379e911d5",
     "analytics.json": "cef8d3668cd55040f30f7992c6285a140fd240eaaa58a1c61ddb27d420ada2fb",
     "history.json": "a06e6d19ecd8f5a46d570da2ef6f893cbf927755074442aa31d068d98aaf1860"
   },
-  "reason": "Risk validation or human decisions incomplete"
+  "reason": "All recorded human decisions applied"
 }

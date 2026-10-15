@@ -1,6 +1,6 @@
 # Procurement audit risk register
 
-**DRAFT — scope recommendations only; no auditor decisions recorded.**
+*Revision 1, following auditor comments by Tony dated 2026-10-15.*
 
 
 Band column uses the council's response bands (5.13, Table 4, p.19): Extreme 15 -25; Medium - High 8-12; Moderate 4 - 6; Low Up to 3. Matrix labels are reported separately. Not used for banding: Figure 4. Risk Escalation, p.21 gives a different Corporate Risk Register entry point ("Score 9 or above"). Scoring-method discrepancies recorded in history.json, not resolved here: DIS-01, DIS-02, DIS-03, DIS-04, DIS-05, DIS-06, DIS-07, DIS-08, DIS-09, DIS-10, DIS-11, DIS-12.
@@ -209,4 +209,13 @@ Individually chosen care and education placements are exempt from competition, b
 
 ## Auditor decisions
 
-No decisions recorded; the auditor must complete auditor-comments.md.
+Recorded decisions:
+- R-01: approve — Accept recommendation: leave out of scope.
+- R-02: approve — Include in scope.
+- R-03: approve — Include in scope.
+- R-04: approve — Include in scope.
+- R-05: approve — Include in scope.
+- R-06: approve — Include in scope.
+- R-07: approve — Include in scope.
+- R-08: approve — Include in scope.
+- R-09: approve — Accept recommendation: leave out of scope.
