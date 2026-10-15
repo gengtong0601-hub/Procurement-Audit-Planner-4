@@ -58,18 +58,66 @@
     }
   },
   "tag_rules": {
-    "care_or_education_placement": "Service ^(Adult Social Care|Children's Social Care|Education); Narrative ^(Private Contractors|Other agencies|Voluntary Associations)$",
-    "grant": "Narrative GRANT",
-    "agency_staff": "Narrative AGENCY",
-    "premises_non_procurement": "Narrative RENT|RATES|WATER RATES|LEASE",
-    "general_procurement": "otherwise; first match wins"
+    "care_or_education_placement": {
+      "service_regex": "^(Adult Social Care|Children's Social Care|Education)",
+      "narrative_fullmatch": "Private Contractors|Other agencies|Voluntary Associations"
+    },
+    "grant": {
+      "narrative_regex": "GRANT"
+    },
+    "agency_staff": {
+      "narrative_regex": "AGENCY"
+    },
+    "premises_non_procurement": {
+      "narrative_regex": "\\bRENTS?\\b|\\bRATES\\b|\\bWATER RATES\\b|\\bLEASE\\b",
+      "spec_regex": "RENT|RATES|WATER RATES|LEASE",
+      "correction": "word boundaries added: unbounded RENT matched 'Equipment Rentals' (equipment hire)"
+    },
+    "general_procurement": {
+      "rule": "otherwise"
+    },
+    "order": "first match wins in the order listed; matching is case-insensitive on stripped values"
   },
   "exclusion_regexes": {
-    "pension": "LGPS|PENSION|SUPERANNUATION",
-    "inter_authority": "\\b(COUNCIL|BOROUGH|COUNTY|CNCL|NHS|POLICE|FIRE AUTHORITY|FIRE AND RESCUE|HMRC|HM REVENUE|DEPARTMENT FOR|MINISTRY OF)\\b"
+    "redacted_supplier": "Supplier name equals 'Redacted' (case-insensitive)",
+    "pension_statutory": "LGPS|PENSION|SUPERANNUATION",
+    "inter_authority_supplier": "\\b(COUNCIL|BOROUGH|COUNTY|CNCL|NHS|POLICE|FIRE AUTHORITY|FIRE AND RESCUE|HMRC|HM REVENUE|DEPARTMENT FOR|MINISTRY OF)\\b",
+    "inter_authority_narrative": "JOINT ARRANGEMENTS",
+    "inter_authority_unless_narrative": "Private Contractors"
+  },
+  "exclusion_review": {
+    "inter_authority_supplier_names": {
+      "BERKSHIRE HEALTHCARE NHS FOUNDATION TRUST": 5,
+      "Berkshire County Sports Partnership/Get Berkshire Active": 1,
+      "Buckinghamshire Council": 1,
+      "DEPARTMENT FOR SCIENCE, INNOVATION AND TECHNOLOGY": 1,
+      "DEVON COUNTY COUNCIL": 1,
+      "GREAT SHEFFORD PARISH COUNCIL": 1,
+      "HAMPSHIRE COUNTY COUNCIL": 10,
+      "KENT COUNTY COUNCIL": 1,
+      "OXFORDSHIRE COUNTY COUNCIL": 5,
+      "READING BOROUGH COUNCIL": 10,
+      "SOUTHAMPTON CITY COUNCIL": 1,
+      "TAMESIDE  METROPOLITAN BOROUGH": 2,
+      "THAMES VALLEY POLICE": 1,
+      "University Hospitals Birmingham NHS Foundation Trust (C/O Togetherness (formally Solihull Approach)": 1,
+      "WEST BERKSHIRE COUNCIL": 4,
+      "WOKINGHAM BOROUGH COUNCIL": 1
+    },
+    "inter_authority_by_narrative_only": {},
+    "pension_statutory_narratives": {
+      "Employers LGPS Deficit Contribution": 3,
+      "LGPS Employees Control": 3,
+      "LGPS Employers Control": 3,
+      "Teachers LGPS ERS Control": 3
+    },
+    "premises_regex_correction_narratives": {
+      "Equipment Rentals": 4
+    },
+    "note": "Counts are rows. Review names for regex false positives; any reversal is made by editing the named regex in scripts/clean.py."
   },
   "warnings": [],
-  "provenance": "Prepared by Codex; Claude Code agent execution and human approval pending.",
+  "provenance": "scripts/clean.py run by the Claude Code spend-analyst sub-agent; human approval pending.",
   "contracts": {
     "contracts_present": true,
     "register_present": false,
@@ -93,7 +141,8 @@
       "2026-09-09"
     ],
     "warnings": [
-      "Some end-date-active notices start after the spend window. Listed for traceability; these future notices are excluded from matching and spend-vs-award."
+      "1 active notice(s) start after the spend window ends. They stay in the matching set (active = end date on/after window start or blank) but are not 'live' for spend_vs_award.",
+      "Publication years with kept notices below half the median (19.0) per year: 2021=7, 2026=5. Published range is 2021-02-23 to 2026-09-09, so first/last years may be partial; a thin year may also mean notices published elsewhere or an export limit. Completeness review required."
     ],
     "caveat": "contracts.csv holds published *notices*, not a contract register. It holds awards published on Contracts Finder in roughly the last five years. A contract awarded earlier (e.g. long-running waste or highways contracts), one advertised only on Find a Tender, a framework call-off recorded under another buyer, or an exempt placement will have no notice here. \"No notice found\" is therefore an indicator to check against the council's contract register, never evidence of off-contract spend.",
     "rows_dropped_other_buyers": 9,
@@ -121,6 +170,12 @@
     },
     "active_definition": "End date on/after spend window start, or blank end date (guide's notice-coverage proxy).",
     "starts_after_window": 1,
+    "thin_year_rule": "a publication year (kept notices) below half the median across years in the published range",
+    "median_notices_per_year": 19.0,
+    "thin_years": {
+      "2021": 7,
+      "2026": 5
+    },
     "register_rows": 0
   }
 }

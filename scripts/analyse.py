@@ -12,7 +12,7 @@ import json
 import re
 import sys
 from collections import Counter, defaultdict
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from decimal import Decimal, ROUND_HALF_UP
 from difflib import SequenceMatcher
 from pathlib import Path
@@ -32,6 +32,47 @@ def is_true(value) -> bool:
     return value is True or str(value).lower() == "true"
 
 
+def matching_set(notices: list[dict], register: list[dict], contracts_present: bool) -> list[dict]:
+    """Spec active set for matching: notice end date on/after the spend window start, or blank."""
+    active = [n for n in notices if is_true(n["active"])] if contracts_present else []
+    return active + [r for r in register if is_true(r["active"])]
+
+
+def live_notices(notices: list[dict]) -> list[dict]:
+    """Live during the window: active and not starting after the window ends (spend_vs_award only)."""
+    return [n for n in notices if is_true(n["active"]) and not is_true(n.get("starts_after_window"))]
+
+
+def parameter_value(record):
+    return record.get("value") if isinstance(record, dict) else record
+
+
+def interpretation_rules(rules: dict) -> dict:
+    """Rules that govern how indicators are read, cited by rule_id from the current rules.json."""
+    excluded = [e for e in rules.get("excluded", []) if str(e.get("clause", "")) == "1.6.2"]
+    return {
+        "anti_avoidance": {"rule_ids": sorted(r["rule_id"] for r in rules["rules"] if r.get("type") == "anti-avoidance"),
+                           "use": "no artificial splitting; cited by split_purchases and threshold_clustering"},
+        "placement_exemption": {"clause": "App C row F", "rule_ids": rule_ids_for(rules, "App C row F"),
+                                "use": "individually chosen care/education placements are exempt from competition; placement tag reported separately"},
+        "extension": {"clause": "App C row D", "rule_ids": rule_ids_for(rules, "App C row D"), "use": "S151 approval for extensions; cited by expired_notice_spend"},
+        "variation": {"clause": "App C row E", "rule_ids": rule_ids_for(rules, "App C row E"), "use": "approval for variations; cited by spend_vs_award"},
+        "grant_is_contract": {"clause": "1.6.2", "rule_ids": [], "in_rules_json_excluded": bool(excluded),
+                              "excluded_reason": excluded[0].get("reason") if excluded else None,
+                              "use": "grants and Transfer Payment rows are tagged, never excluded; rules.json lists 1.6.2 under 'excluded', so it is cited by clause only"},
+    }
+
+
+def supplier_tag_summary(suppliers: list[dict], tag_field: str = "dominant_tag") -> dict:
+    result = {}
+    for tag in TAGS:
+        subset = [s for s in suppliers if s.get(tag_field) == tag]
+        result[tag] = {"suppliers": len(subset), "gbp": gbp(sum(int(s["amount_pence"]) for s in subset)),
+                       "annualised_estimate_gbp": gbp(sum(int(s["annualised_estimate_pence"]) for s in subset)),
+                       "multi_tag_suppliers": sum(1 for s in subset if is_true(s.get("multi_tag")))}
+    return result
+
+
 def stable_id(prefix: str, parts: list[str]) -> str:
     return prefix + "-" + hashlib.sha256("|".join(parts).encode()).hexdigest()[:14]
 
@@ -47,8 +88,10 @@ def load_rules(path: Path) -> tuple[dict, list[dict], list[dict]]:
     parameters = doc.get("parameters", {})
     thresholds, skipped = {}, []
     for name, record in parameters.items():
-        if (record.get("value") if isinstance(record, dict) else record) is None:
-            skipped.append({"test": "threshold_dependent_tiers", "tier": name, "reason": f"{name} is null; no value invented"})
+        if parameter_value(record) is None:
+            citing = sorted({r["rule_id"] for r in doc["rules"] if name in (r.get("threshold_low_ref"), r.get("threshold_high_ref"))})
+            skipped.append({"test": "threshold_clustering, split_purchases", "tier": name, "rule_ids": citing,
+                            "reason": f"{name} is null; the threshold boundary these rules cite is not tested and no value is invented"})
     for rule in doc["rules"]:
         if rule.get("type") not in {"threshold", "approver", "anti-avoidance"}:
             continue
@@ -67,9 +110,12 @@ def load_rules(path: Path) -> tuple[dict, list[dict], list[dict]]:
             pennies = to_pence(value, f"{rid}.threshold_{side}")
             if pennies <= 0:
                 continue
-            entry = thresholds.setdefault(pennies, {"value": gbp(pennies), "amount_pence": pennies, "rule_ids": [], "competition_triggering": False, "boundaries": [], "parameter_refs": []})
+            entry = thresholds.setdefault(pennies, {"value": gbp(pennies), "amount_pence": pennies, "rule_ids": [], "competition_triggering": False,
+                                                    "competition_rule_ids": [], "boundaries": [], "parameter_refs": []})
             entry["rule_ids"].append(rid)
             entry["competition_triggering"] |= competition
+            if competition:
+                entry["competition_rule_ids"].append(rid)
             inclusive = rule.get(f"threshold_{side}_inclusive")
             entry["boundaries"].append({"rule_id": rid, "side": side, "inclusive": inclusive, "competition_triggering": competition, "scope": rule.get("scope", "all")})
             if reference:
@@ -81,6 +127,8 @@ def load_rules(path: Path) -> tuple[dict, list[dict], list[dict]]:
         entry["inclusive"] = any(b["inclusive"] is True for b in lowers) if lowers else not all(b["inclusive"] is True for b in entry["boundaries"])
         entry["effective_trigger_pence"] = entry["amount_pence"] + (0 if entry["inclusive"] else 1)
         entry["rule_ids"] = sorted(set(entry["rule_ids"]))
+        entry["competition_rule_ids"] = sorted(set(entry["competition_rule_ids"]))
+        entry["competition_basis"] = "a citing rule's required_action involves quotes or tenders (agent spec criterion)"
         entry["parameter_refs"] = sorted(set(entry["parameter_refs"]))
     if not thresholds:
         raise InputError("No usable numeric thresholds in rules.json")
@@ -182,7 +230,7 @@ def match_supplier(name: str, company: str, active: list[dict], spend_names: set
     return {"match_class": "none", "candidate": [], "match_rule": "none", "notice_ids": []}
 
 
-def threshold_clustering(rows: list[dict], thresholds: list[dict], full: Path) -> dict:
+def threshold_clustering(rows: list[dict], thresholds: list[dict], full: Path, extra_rule_ids: tuple = ()) -> dict:
     tiers, flags = [], []
     for threshold in thresholds:
         t, trigger = threshold["amount_pence"], threshold["effective_trigger_pence"]
@@ -201,7 +249,7 @@ def threshold_clustering(rows: list[dict], thresholds: list[dict], full: Path) -
     write_csv(full / "threshold-clustering.csv", flags)
     unique = {r["row_id"]: r for r in flags}
     return {"parameters": {"band": "[0.9T, T), upper boundary includes T only when rule trigger is exclusive", "comparator": "[T,1.1T)", "baseline": "[0.5T,1.5T)"},
-            "rule_ids": sorted({rid for t in thresholds for rid in t["rule_ids"]}), "count": len(unique), "gbp": gbp(sum(r["amount_pence"] for r in unique.values())),
+            "rule_ids": sorted({rid for t in thresholds for rid in t["rule_ids"]} | set(extra_rule_ids)), "count": len(unique), "gbp": gbp(sum(r["amount_pence"] for r in unique.values())),
             "count_definition": "distinct payments flagged at one or more thresholds", "tiers": tiers, "full_file": str(full / "threshold-clustering.csv")}
 
 
@@ -228,7 +276,7 @@ def window_record(members: list[dict], prefix: str, extra: str = "") -> dict:
             "multi_tag": len(tag_total) > 1, "tag_totals_gbp": {k: gbp(v) for k, v in tag_total.items()}, "row_ids": ids}
 
 
-def split_purchases(rows: list[dict], thresholds: list[dict], full: Path) -> dict:
+def split_purchases(rows: list[dict], thresholds: list[dict], full: Path, extra_rule_ids: tuple = ()) -> dict:
     groups = defaultdict(list)
     for row in rows:
         groups[row["supplier_norm"]].append(row)
@@ -257,34 +305,63 @@ def split_purchases(rows: list[dict], thresholds: list[dict], full: Path) -> dic
         placements = [r for r in candidates if r["tag"] == "care_or_education_placement"]
         tiers.append({"threshold": threshold["value"], "rule_ids": threshold["rule_ids"], "windows": len(candidates), "suppliers": len({r["supplier_norm"] for r in candidates}),
                       "gbp": gbp(sum(r["amount_pence"] for r in candidates)), "by_tag": tag_summary(candidates),
+                      "by_tag_unit": "rows = windows (tag = dominant tag by GBP within the window); gbp = window totals",
                       "headline": {"windows": len(general), "gbp": gbp(sum(r["amount_pence"] for r in general))},
                       "placements": {"windows": len(placements), "gbp": gbp(sum(r["amount_pence"] for r in placements)), "caveat": "Periodic care/education fees can legitimately recur."}, "top20": candidates[:20]})
     write_csv(full / "split-purchases.csv", flags)
     return {"parameters": {"window_days": 30, "interval": "[anchor calendar date, anchor + 30 days)", "deduplication": "per supplier per threshold, highest total first, discard overlapping row sets",
-                           "headline_tag": "general_procurement"}, "rule_ids": sorted({rid for t in thresholds if t["competition_triggering"] for rid in t["rule_ids"]}),
-            "count": sum(t["headline"]["windows"] for t in tiers), "count_definition": "general-procurement windows summed across thresholds; may share payments across thresholds",
+                           "headline_tag": "general_procurement"}, "rule_ids": sorted({rid for t in thresholds if t["competition_triggering"] for rid in t["rule_ids"]} | set(extra_rule_ids)),
+            "count": sum(t["headline"]["windows"] for t in tiers), "count_definition": "general-procurement windows summed across thresholds; the same payments can appear at more than one threshold, so quote per-tier figures",
             "gbp": gbp(sum(r["amount_pence"] for r in flags if r["tag"] == "general_procurement")), "tiers": tiers, "full_file": str(full / "split-purchases.csv")}
 
 
-def high_value_suppliers(suppliers: list[dict], thresholds: list[dict], months: int, full: Path) -> tuple[dict, list[dict]]:
+def high_value_suppliers(suppliers: list[dict], thresholds: list[dict], months: int, full: Path,
+                         matches: dict | None = None, publication: dict | None = None) -> tuple[dict, list[dict]]:
     competition = [t for t in thresholds if t["competition_triggering"]]
     if not competition:
         write_csv(full / "high-value-suppliers.csv", [])
         return {"skipped": True, "reason": "No numeric competition-triggering threshold is available"}, []
     lowest = min(competition, key=lambda t: t["amount_pence"])
-    # Compare unrounded annualised estimate to the trigger.
-    selected = [s for s in suppliers if s["amount_pence"] * 12 >= lowest["effective_trigger_pence"] * months]
+    # Compare the unrounded annualised estimate to the trigger (integer pence, no float).
+    selected = [dict(s) for s in suppliers if s["amount_pence"] * 12 >= lowest["effective_trigger_pence"] * months]
+    pub_trigger = publication["amount_pence"] + (0 if publication["inclusive"] else 1) if publication else None
+    for s in selected:
+        s["tiers_met_gbp"] = [t["value"] for t in competition if s["amount_pence"] * 12 >= t["effective_trigger_pence"] * months]
+        if matches is None or pub_trigger is None:
+            s["match_class"] = "not_run"
+        elif s["amount_pence"] * 12 >= pub_trigger * months:
+            s["match_class"] = matches[s["supplier_norm"]]["match_class"]
+        else:
+            s["match_class"] = "not_classed_below_publication_threshold"
     write_csv(full / "high-value-suppliers.csv", selected)
     general = [r for r in selected if r["dominant_tag"] == "general_procurement"]
+    tiers = []
+    for t in sorted(competition, key=lambda t: t["amount_pence"]):
+        sub = [s for s in selected if s["amount_pence"] * 12 >= t["effective_trigger_pence"] * months]
+        gen = [s for s in sub if s["dominant_tag"] == "general_procurement"]
+        tiers.append({"threshold": t["value"], "inclusive": t["inclusive"], "rule_ids": t["rule_ids"], "count": len(sub),
+                      "gbp": gbp(sum(s["amount_pence"] for s in sub)), "annualised_estimate_gbp": gbp(sum(s["annualised_estimate_pence"] for s in sub)),
+                      "by_tag": supplier_tag_summary(sub),
+                      "headline": {"count": len(gen), "gbp": gbp(sum(s["amount_pence"] for s in gen)),
+                                   "annualised_estimate_gbp": gbp(sum(s["annualised_estimate_pence"] for s in gen))},
+                      "filter": f"high-value-suppliers.csv rows whose tiers_met_gbp includes {t['value']}"})
     statutory = []
     for t in competition:
         if t["parameter_refs"]:
             sub = [s for s in suppliers if s["amount_pence"] * 12 >= t["effective_trigger_pence"] * months]
             statutory.append({"threshold": t["value"], "parameters": t["parameter_refs"], "count": len(sub), "gbp": gbp(sum(s["amount_pence"] for s in sub)), "top20": sub[:20]})
-    return {"parameters": {"threshold": lowest["value"], "inclusive": lowest["inclusive"], "annualisation": "total × (12 / distinct months covered)", "annualised_label": "annualised estimate"},
+    return {"parameters": {"threshold": lowest["value"], "inclusive": lowest["inclusive"], "threshold_basis": "lowest competition-triggering threshold",
+                           "annualisation": "total x (12 / distinct months covered)", "annualised_label": "annualised estimate",
+                           "dominant_tag": "tag with the largest GBP total for the supplier; multi_tag records suppliers spanning several tags",
+                           "purpose": "population for which contract evidence is requested from the council during fieldwork (Phase 3 PBC list)"},
             "rule_ids": lowest["rule_ids"], "count": len(selected), "gbp": gbp(sum(r["amount_pence"] for r in selected)),
-            "headline": {"count": len(general), "gbp": gbp(sum(r["amount_pence"] for r in general)), "top20": general[:20]},
-            "by_tag": tag_summary(selected, tag_field="dominant_tag"), "tag_tables": {tag: [s for s in selected if s["dominant_tag"] == tag][:20] for tag in TAGS},
+            "annualised_estimate_gbp": gbp(sum(r["annualised_estimate_pence"] for r in selected)),
+            "headline": {"definition": "suppliers whose dominant tag is general_procurement, top 20 by annualised estimate",
+                         "count": len(general), "gbp": gbp(sum(r["amount_pence"] for r in general)),
+                         "annualised_estimate_gbp": gbp(sum(r["annualised_estimate_pence"] for r in general)), "top20": general[:20]},
+            "by_tag": supplier_tag_summary(selected), "tiers": tiers,
+            "tag_tables": {tag: [s for s in selected if s["dominant_tag"] == tag][:20] for tag in TAGS if tag != "general_procurement"},
+            "match_class_counts": dict(sorted(Counter(s["match_class"] for s in selected).items())),
             "statutory_tiers": statutory, "top20": selected[:20], "full_file": str(full / "high-value-suppliers.csv")}, selected
 
 
@@ -318,7 +395,8 @@ def duplicates(rows: list[dict], full: Path) -> dict:
     for tier in ("same_timestamp", "different_time"):
         subset = [r for r in groups if r["tier"] == tier]
         tiers[tier] = {"groups": len(subset), "rows": sum(r["n_payments"] for r in subset), "gbp_beyond_first": gbp(sum(r["excess_pence"] for r in subset)),
-                       "by_tag": tag_summary(subset, "excess_pence"), "top20": subset[:20]}
+                       "by_tag": tag_summary(subset, "excess_pence"),
+                       "by_tag_unit": "rows = groups (tag = dominant tag by GBP within the group); gbp = value beyond the first instance", "top20": subset[:20]}
     return {"parameters": {"window_days": 7, "date_rule": "calendar difference <= 7 days", "comparison": "same normalised supplier and exact integer pence",
                            "tier_rule": "Group with any differing timestamp is different_time; otherwise same_timestamp. Groups are disjoint, highest total first."},
             "rule_ids": [], "count": len(groups), "rows": sum(r["n_payments"] for r in groups), "gbp": gbp(sum(r["excess_pence"] for r in groups)),
@@ -343,7 +421,10 @@ def off_contract(suppliers: list[dict], matches: dict, rules: dict, months: int,
             "rule_ids": threshold["rule_ids"], "contracts_present": contracts["contracts_present"], "register_present": contracts["register_present"],
             "count": len(unmatched), "gbp": gbp(sum(s["amount_pence"] for s in unmatched)), "eligible_suppliers": len(selected),
             "by_match_class": {kind: {"count": len([s for s in selected if s["match_class"] == kind]), "gbp": gbp(sum(s["amount_pence"] for s in selected if s["match_class"] == kind))} for kind in ("exact", "near_ratio", "near_contain", "none")},
-            "unmatched_by_tag": tag_summary(unmatched, tag_field="dominant_tag"), "headline": {"count": len(headline), "gbp": gbp(sum(s["amount_pence"] for s in headline)), "top20": headline[:20]},
+            "unmatched_by_tag": supplier_tag_summary(unmatched), "headline": {"definition": "unmatched (no exact match) suppliers whose dominant tag is general_procurement",
+                                                                              "count": len(headline), "gbp": gbp(sum(s["amount_pence"] for s in headline)),
+                                                                              "annualised_estimate_gbp": gbp(sum(s["annualised_estimate_pence"] for s in headline)), "top20": headline[:20]},
+            "placement_note": "Placement-tagged suppliers are listed separately: App C row F (" + ", ".join(rule_ids_for(rules, "App C row F")) + ") exempts individually chosen placements from competition, so no notice is expected.",
             "top20": unmatched[:20], "caveat": NOTICE_CAVEAT, "near_match_caveat": "Near matches are candidates for auditor confirmation and remain unmatched in counts.",
             "scope_caveat": "Only suppliers whose annualised estimate reaches the publication threshold are classed. Smaller suppliers are outside this test.", "full_file": str(full / "off-contract.csv")}
 
@@ -370,7 +451,7 @@ def spend_vs_award(suppliers: list[dict], notices: list[dict], contracts: dict, 
     if not contracts["contracts_present"]:
         return {"skipped": True, "reason": "usable contracts.csv is required"}
     result, excluded = [], Counter()
-    active = [n for n in notices if is_true(n["active"]) and not is_true(n["starts_after_window"])]
+    active = live_notices(notices)
     for supplier in suppliers:
         matched = [n for n in active if n["supplier_norm"] == supplier["supplier_norm"] or (supplier["company_number"] and supplier["company_number"] == n.get("company_number"))]
         unique = {n["notice_id"]: n for n in matched}
@@ -424,20 +505,23 @@ def analyse(data: Path, full: Path, output: Path, rules_path: Path) -> dict:
         raise InputError("months_covered must be positive")
     notices = read_csv(full / "notices-clean.csv")
     register = read_csv(full / "register-clean.csv")
-    contracts = log["contracts"]
+    contracts = dict(log["contracts"])
+    contracts["warnings"] = list(contracts.get("warnings", []))
     suppliers = supplier_totals(rows, months)
-    active = [n for n in notices if is_true(n["active"]) and not is_true(n["starts_after_window"])] if contracts["contracts_present"] else []
-    active += [r for r in register if is_true(r["active"])]
+    active = matching_set(notices, register, contracts["contracts_present"])
     spend_names = {s["supplier_norm"] for s in suppliers}
     matches = {s["supplier_norm"]: match_supplier(s["supplier_norm"], s["company_number"], active, spend_names) for s in suppliers} if active else {s["supplier_norm"]: {"match_class": "none", "candidate": [], "match_rule": "no active source", "notice_ids": []} for s in suppliers}
-    match_rows = [{"supplier_norm": s["supplier_norm"], "supplier": s["supplier"], "row_ids": s["row_ids"], **matches[s["supplier_norm"]]} for s in suppliers]
+    match_rows = [{"supplier_norm": s["supplier_norm"], "supplier": s["supplier"], "annualised_estimate_gbp": s["annualised_estimate_gbp"],
+                   "dominant_tag": s["dominant_tag"], "row_ids": s["row_ids"], **matches[s["supplier_norm"]]} for s in suppliers]
     write_csv(full / "supplier-match.csv", match_rows)
     write_csv(full / "near-matches.csv", [r for r in match_rows if r["match_class"].startswith("near_")])
     write_csv(full / "supplier-totals.csv", suppliers)
-    high_value, selected = high_value_suppliers(suppliers, thresholds, months, full)
+    publication = publication_threshold(rules) if active else None
+    high_value, selected = high_value_suppliers(suppliers, thresholds, months, full, matches if active else None, publication)
+    anti = tuple(r["rule_id"] for r in rules["rules"] if r.get("type") == "anti-avoidance")
     tests = {
-        "threshold_clustering": threshold_clustering(rows, thresholds, full),
-        "split_purchases": split_purchases(rows, thresholds, full),
+        "threshold_clustering": threshold_clustering(rows, thresholds, full, anti),
+        "split_purchases": split_purchases(rows, thresholds, full, anti),
         "high_value_suppliers": high_value,
         "duplicates": duplicates(rows, full),
         "off_contract": off_contract(suppliers, matches, rules, months, contracts, full),
@@ -447,21 +531,42 @@ def analyse(data: Path, full: Path, output: Path, rules_path: Path) -> dict:
     for name, test in tests.items():
         if test.get("skipped"):
             skipped.append({"test": name, "reason": test["reason"]})
-    for name, parameter in rules.get("parameters", {}).items():
-        if "STATUTORY" in name and (parameter.get("value") if isinstance(parameter, dict) else parameter) is None:
-            for test in ("high_value_suppliers", "off_contract"):
-                skipped.append({"test": test, "tier": name, "reason": f"{name} is null"})
+    statutory_null = [name for name, parameter in rules.get("parameters", {}).items() if "STATUTORY" in name and parameter_value(parameter) is None]
+    if statutory_null:
+        for test in ("high_value_suppliers", "off_contract"):
+            skipped.append({"test": test, "tier": "statutory", "parameters": statutory_null,
+                            "reason": f"{', '.join(statutory_null)} null; no statutory-threshold tier computed and no value invented"})
+    # Publication-platform note, derived from the publication rules' own wording.
+    pub_rules = [r for r in rules["rules"] if publication and r["rule_id"] in publication["rule_ids"]]
+    if contracts["contracts_present"] and any(re.search(r"\bCDP\b|Central Digital Platform|Find a Tender", r.get("required_action", ""), re.I) for r in pub_rules):
+        contracts["warnings"].append("Rules " + ", ".join(r["rule_id"] for r in pub_rules) + " require contract notices on the CDP; contracts.csv is a Contracts Finder export, "
+                                     "so awards published only on the CDP/Find a Tender are not in it. Read thin recent years and 'none' matches with this in mind.")
+    method_notes = []
+    lowest = min((t for t in thresholds if t["competition_triggering"]), key=lambda t: t["amount_pence"], default=None)
+    if lowest:
+        actions = sorted({r["required_action"] for r in rules["rules"] if r["rule_id"] in lowest["competition_rule_ids"]})
+        method_notes.append(f"Lowest competition-triggering threshold is {lowest['value']} (rules {', '.join(lowest['competition_rule_ids'])}; required_action: {' / '.join(actions)}). "
+                            "The agent spec counts any quote or tender requirement as competition-triggering, so split_purchases and high_value_suppliers run at this tier; "
+                            "high_value_suppliers.tiers and split_purchases.tiers report each higher competition-triggering threshold separately.")
     payload = {
-        "generated_at": date.today().isoformat(), "schema_version": "1.0", "scripts": ["scripts/clean.py", "scripts/analyse.py"],
-        "execution": {"producer": "Codex preparation", "claude_code_verified": False, "human_approval": "pending", "source_rules_sha256": hashlib.sha256(rules_path.read_bytes()).hexdigest()},
+        "generated_at": datetime.now().isoformat(timespec="seconds"), "schema_version": "1.1", "scripts": ["scripts/clean.py", "scripts/analyse.py"],
+        "execution": {"producer": "Claude Code spend-analyst sub-agent (native run)", "human_approval": "pending",
+                      "source_rules_sha256": hashlib.sha256(rules_path.read_bytes()).hexdigest(),
+                      "source_spend_sha256": {f["file"]: f["sha256"] for f in log["files"]}},
         "population": {k: log[k] for k in ("files", "rows_raw", "rows_after_exclusions", "date_min", "date_max", "months_covered", "excluded")},
         "thresholds": thresholds, "skipped": skipped, "contracts": contracts,
-        "matching": {**dict(Counter(m["match_class"] for m in matches.values())), "near_matches_file": str(full / "near-matches.csv"), "near_matches_require_human_confirmation": True},
+        "matching": {**{k: 0 for k in ("exact", "near_ratio", "near_contain", "none")}, **dict(Counter(m["match_class"] for m in matches.values())),
+                     "spend_suppliers": len(matches), "matched_against": "active notice suppliers (end date on/after spend window start, or blank) plus active register rows",
+                     "active_notice_supplier_pairs": len(active), "near_matches_file": str(full / "near-matches.csv"), "supplier_match_file": str(full / "supplier-match.csv"),
+                     "near_matches_require_human_confirmation": True, "near_matches_counted_as_matches": False},
+        "interpretation_rules": interpretation_rules(rules), "method_notes": method_notes,
         "tests": tests,
     }
-    payload["population"].update({"annualisation_factor": float(Decimal(12) / months), "total_pence": sum(r["amount_pence"] for r in rows),
-                                  "total_gbp": gbp(sum(r["amount_pence"] for r in rows)), "tags": tag_summary(rows),
-                                  "limitations": ["population is expenditure over £500 only; split and duplicate indicators are lower bounds", "Date is a payment-run timestamp, not an invoice date",
+    payload["population"].update({"annualisation_factor": float(Decimal(12) / months), "annualised_label": "annualised estimate", "total_pence": sum(r["amount_pence"] for r in rows),
+                                  "total_gbp": gbp(sum(r["amount_pence"] for r in rows)), "raw_total_gbp": gbp(int(log["raw_total_pence"])), "tags": tag_summary(rows),
+                                  "tag_rules": log["tag_rules"], "exclusion_regexes": log["exclusion_regexes"],
+                                  "limitations": ["population is expenditure over £500 only; split and duplicate indicators are lower bounds", "Date is a payment-run timestamp, not an invoice date; window logic uses calendar dates",
+                                                  "Redacted supplier rows are many payees under one label and are excluded from every supplier-level test",
                                                   "annualised estimate assumes observed months are representative", "mixed procurement categories cannot be assigned statutory tiers without fieldwork", "indicators to investigate; not findings of wrongdoing"],
                                   "warnings": log["warnings"]})
     write_json(output, payload)

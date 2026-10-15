@@ -1,0 +1,5 @@
+ scripts/analyse.py      | 175 ++++++++++++++++++++++++++++++++++++++----------
+ scripts/clean.py        |  72 +++++++++++++++-----
+ scripts/selfcheck.py    |  46 ++++++++++---
+ tests/test_analytics.py |  40 ++++++++++-
+ 4 files changed, 274 insertions(+), 59 deletions(-)

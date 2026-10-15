@@ -1,15 +1,19 @@
 {
-  "generated_at": "2026-10-05",
-  "schema_version": "1.0",
+  "generated_at": "2026-10-15T14:23:34",
+  "schema_version": "1.1",
   "scripts": [
     "scripts/clean.py",
     "scripts/analyse.py"
   ],
   "execution": {
-    "producer": "Codex preparation",
-    "claude_code_verified": false,
+    "producer": "Claude Code spend-analyst sub-agent (native run)",
     "human_approval": "pending",
-    "source_rules_sha256": "3b3614cef0d6fabf7a99c25d00556f423c1148963e5367736073900e004626f5"
+    "source_rules_sha256": "e7391cad3b9c4b50e831aa781f3daaf583b845cd3bb6238805d3b96379e911d5",
+    "source_spend_sha256": {
+      "Over500_2026_P02_-_published.xlsx": "f611346f258825b84924310c2d42edce4a4aec3d3832054b340f4ac2125301a6",
+      "Over500_2026_P03_-_published.xlsx": "b7359a8e5cb9ea55bf3d47112f185167038b5ee64af8db9be02a7f5ea869ec76",
+      "Over500_2026_P04_-_published.xlsx": "e465900d00a8e20ac767d6218827a48c01ab6ad911e5051a34c18979b7da0612"
+    }
   },
   "population": {
     "files": [
@@ -64,14 +68,16 @@
       }
     },
     "annualisation_factor": 4.0,
+    "annualised_label": "annualised estimate",
     "total_pence": 6677810478,
     "total_gbp": 66778104.78,
+    "raw_total_gbp": 80427254.26,
     "tags": {
       "general_procurement": {
-        "rows": 2126,
-        "amount_pence": 2831836776,
-        "gbp": 28318367.76,
-        "suppliers": 518
+        "rows": 2130,
+        "amount_pence": 2832113816,
+        "gbp": 28321138.16,
+        "suppliers": 519
       },
       "care_or_education_placement": {
         "rows": 5839,
@@ -92,15 +98,44 @@
         "suppliers": 7
       },
       "premises_non_procurement": {
-        "rows": 206,
-        "amount_pence": 56888466,
-        "gbp": 568884.66,
-        "suppliers": 31
+        "rows": 202,
+        "amount_pence": 56611426,
+        "gbp": 566114.26,
+        "suppliers": 28
       }
+    },
+    "tag_rules": {
+      "care_or_education_placement": {
+        "service_regex": "^(Adult Social Care|Children's Social Care|Education)",
+        "narrative_fullmatch": "Private Contractors|Other agencies|Voluntary Associations"
+      },
+      "grant": {
+        "narrative_regex": "GRANT"
+      },
+      "agency_staff": {
+        "narrative_regex": "AGENCY"
+      },
+      "premises_non_procurement": {
+        "narrative_regex": "\\bRENTS?\\b|\\bRATES\\b|\\bWATER RATES\\b|\\bLEASE\\b",
+        "spec_regex": "RENT|RATES|WATER RATES|LEASE",
+        "correction": "word boundaries added: unbounded RENT matched 'Equipment Rentals' (equipment hire)"
+      },
+      "general_procurement": {
+        "rule": "otherwise"
+      },
+      "order": "first match wins in the order listed; matching is case-insensitive on stripped values"
+    },
+    "exclusion_regexes": {
+      "redacted_supplier": "Supplier name equals 'Redacted' (case-insensitive)",
+      "pension_statutory": "LGPS|PENSION|SUPERANNUATION",
+      "inter_authority_supplier": "\\b(COUNCIL|BOROUGH|COUNTY|CNCL|NHS|POLICE|FIRE AUTHORITY|FIRE AND RESCUE|HMRC|HM REVENUE|DEPARTMENT FOR|MINISTRY OF)\\b",
+      "inter_authority_narrative": "JOINT ARRANGEMENTS",
+      "inter_authority_unless_narrative": "Private Contractors"
     },
     "limitations": [
       "population is expenditure over £500 only; split and duplicate indicators are lower bounds",
-      "Date is a payment-run timestamp, not an invoice date",
+      "Date is a payment-run timestamp, not an invoice date; window logic uses calendar dates",
+      "Redacted supplier rows are many payees under one label and are excluded from every supplier-level test",
       "annualised estimate assumes observed months are representative",
       "mixed procurement categories cannot be assigned statutory tiers without fieldwork",
       "indicators to investigate; not findings of wrongdoing"
@@ -109,35 +144,18 @@
   },
   "thresholds": [
     {
-      "value": 500.0,
-      "amount_pence": 50000,
-      "rule_ids": [
-        "CPR-06"
-      ],
-      "competition_triggering": false,
-      "boundaries": [
-        {
-          "rule_id": "CPR-06",
-          "side": "low",
-          "inclusive": false,
-          "competition_triggering": false,
-          "scope": "all"
-        }
-      ],
-      "parameter_refs": [],
-      "inclusive": false,
-      "effective_trigger_pence": 50001
-    },
-    {
       "value": 1000.0,
       "amount_pence": 100000,
       "rule_ids": [
-        "CPR-69"
+        "CPR-68"
       ],
       "competition_triggering": true,
+      "competition_rule_ids": [
+        "CPR-68"
+      ],
       "boundaries": [
         {
-          "rule_id": "CPR-69",
+          "rule_id": "CPR-68",
           "side": "low",
           "inclusive": false,
           "competition_triggering": true,
@@ -146,38 +164,24 @@
       ],
       "parameter_refs": [],
       "inclusive": false,
-      "effective_trigger_pence": 100001
-    },
-    {
-      "value": 5000.0,
-      "amount_pence": 500000,
-      "rule_ids": [
-        "CPR-07"
-      ],
-      "competition_triggering": false,
-      "boundaries": [
-        {
-          "rule_id": "CPR-07",
-          "side": "low",
-          "inclusive": false,
-          "competition_triggering": false,
-          "scope": "goods-services"
-        }
-      ],
-      "parameter_refs": [],
-      "inclusive": false,
-      "effective_trigger_pence": 500001
+      "effective_trigger_pence": 100001,
+      "competition_basis": "a citing rule's required_action involves quotes or tenders (agent spec criterion)"
     },
     {
       "value": 25000.0,
       "amount_pence": 2500000,
       "rule_ids": [
         "CPR-20",
+        "CPR-68",
         "CPR-69",
-        "CPR-70",
         "CPR-71"
       ],
       "competition_triggering": true,
+      "competition_rule_ids": [
+        "CPR-68",
+        "CPR-69",
+        "CPR-71"
+      ],
       "boundaries": [
         {
           "rule_id": "CPR-20",
@@ -187,14 +191,14 @@
           "scope": "all"
         },
         {
-          "rule_id": "CPR-69",
+          "rule_id": "CPR-68",
           "side": "high",
           "inclusive": false,
           "competition_triggering": true,
           "scope": "all"
         },
         {
-          "rule_id": "CPR-70",
+          "rule_id": "CPR-69",
           "side": "low",
           "inclusive": true,
           "competition_triggering": true,
@@ -210,7 +214,8 @@
       ],
       "parameter_refs": [],
       "inclusive": true,
-      "effective_trigger_pence": 2500000
+      "effective_trigger_pence": 2500000,
+      "competition_basis": "a citing rule's required_action involves quotes or tenders (agent spec criterion)"
     },
     {
       "value": 500000.0,
@@ -219,12 +224,17 @@
         "CPR-04",
         "CPR-23",
         "CPR-24",
+        "CPR-52",
+        "CPR-65",
         "CPR-66",
-        "CPR-67",
         "CPR-71",
-        "CPR-72"
+        "CPR-73"
       ],
       "competition_triggering": true,
+      "competition_rule_ids": [
+        "CPR-71",
+        "CPR-73"
+      ],
       "boundaries": [
         {
           "rule_id": "CPR-04",
@@ -248,14 +258,21 @@
           "scope": "all"
         },
         {
-          "rule_id": "CPR-66",
+          "rule_id": "CPR-52",
+          "side": "low",
+          "inclusive": false,
+          "competition_triggering": false,
+          "scope": "all"
+        },
+        {
+          "rule_id": "CPR-65",
           "side": "high",
           "inclusive": false,
           "competition_triggering": false,
           "scope": "all"
         },
         {
-          "rule_id": "CPR-67",
+          "rule_id": "CPR-66",
           "side": "low",
           "inclusive": false,
           "competition_triggering": false,
@@ -269,7 +286,7 @@
           "scope": "works-concession-light-touch"
         },
         {
-          "rule_id": "CPR-72",
+          "rule_id": "CPR-73",
           "side": "low",
           "inclusive": false,
           "competition_triggering": true,
@@ -278,26 +295,28 @@
       ],
       "parameter_refs": [],
       "inclusive": false,
-      "effective_trigger_pence": 50000001
+      "effective_trigger_pence": 50000001,
+      "competition_basis": "a citing rule's required_action involves quotes or tenders (agent spec criterion)"
     },
     {
       "value": 2500000.0,
       "amount_pence": 250000000,
       "rule_ids": [
-        "CPR-67",
-        "CPR-68"
+        "CPR-66",
+        "CPR-67"
       ],
       "competition_triggering": false,
+      "competition_rule_ids": [],
       "boundaries": [
         {
-          "rule_id": "CPR-67",
+          "rule_id": "CPR-66",
           "side": "high",
           "inclusive": false,
           "competition_triggering": false,
           "scope": "all"
         },
         {
-          "rule_id": "CPR-68",
+          "rule_id": "CPR-67",
           "side": "low",
           "inclusive": true,
           "competition_triggering": false,
@@ -306,69 +325,75 @@
       ],
       "parameter_refs": [],
       "inclusive": true,
-      "effective_trigger_pence": 250000000
+      "effective_trigger_pence": 250000000,
+      "competition_basis": "a citing rule's required_action involves quotes or tenders (agent spec criterion)"
     }
   ],
   "skipped": [
     {
-      "test": "threshold_dependent_tiers",
+      "test": "threshold_clustering, split_purchases",
       "tier": "STATUTORY_THRESHOLD_GOODS_SERVICES",
-      "reason": "STATUTORY_THRESHOLD_GOODS_SERVICES is null; no value invented"
+      "rule_ids": [
+        "CPR-01",
+        "CPR-69",
+        "CPR-70"
+      ],
+      "reason": "STATUTORY_THRESHOLD_GOODS_SERVICES is null; the threshold boundary these rules cite is not tested and no value is invented"
     },
     {
-      "test": "threshold_dependent_tiers",
+      "test": "threshold_clustering, split_purchases",
       "tier": "STATUTORY_THRESHOLD_WORKS_CONCESSIONS",
-      "reason": "STATUTORY_THRESHOLD_WORKS_CONCESSIONS is null; no value invented"
+      "rule_ids": [],
+      "reason": "STATUTORY_THRESHOLD_WORKS_CONCESSIONS is null; the threshold boundary these rules cite is not tested and no value is invented"
     },
     {
-      "test": "threshold_dependent_tiers",
+      "test": "threshold_clustering, split_purchases",
       "tier": "STATUTORY_THRESHOLD_LIGHT_TOUCH",
-      "reason": "STATUTORY_THRESHOLD_LIGHT_TOUCH is null; no value invented"
+      "rule_ids": [],
+      "reason": "STATUTORY_THRESHOLD_LIGHT_TOUCH is null; the threshold boundary these rules cite is not tested and no value is invented"
     },
     {
-      "test": "threshold_dependent_tiers",
-      "tier": "STATUTORY_THRESHOLD_RELEVANT",
-      "reason": "STATUTORY_THRESHOLD_RELEVANT is null; no value invented"
-    },
-    {
-      "test": "high_value_suppliers",
-      "tier": "STATUTORY_THRESHOLD_GOODS_SERVICES",
-      "reason": "STATUTORY_THRESHOLD_GOODS_SERVICES is null"
-    },
-    {
-      "test": "off_contract",
-      "tier": "STATUTORY_THRESHOLD_GOODS_SERVICES",
-      "reason": "STATUTORY_THRESHOLD_GOODS_SERVICES is null"
-    },
-    {
-      "test": "high_value_suppliers",
-      "tier": "STATUTORY_THRESHOLD_WORKS_CONCESSIONS",
-      "reason": "STATUTORY_THRESHOLD_WORKS_CONCESSIONS is null"
-    },
-    {
-      "test": "off_contract",
-      "tier": "STATUTORY_THRESHOLD_WORKS_CONCESSIONS",
-      "reason": "STATUTORY_THRESHOLD_WORKS_CONCESSIONS is null"
+      "test": "threshold_clustering, split_purchases",
+      "tier": "STATUTORY_THRESHOLD_APPLICABLE",
+      "rule_ids": [
+        "CPR-10",
+        "CPR-13",
+        "CPR-22",
+        "CPR-23",
+        "CPR-29",
+        "CPR-30",
+        "CPR-61",
+        "CPR-64",
+        "CPR-65",
+        "CPR-73",
+        "CPR-74",
+        "CPR-79",
+        "CPR-80",
+        "CPR-82"
+      ],
+      "reason": "STATUTORY_THRESHOLD_APPLICABLE is null; the threshold boundary these rules cite is not tested and no value is invented"
     },
     {
       "test": "high_value_suppliers",
-      "tier": "STATUTORY_THRESHOLD_LIGHT_TOUCH",
-      "reason": "STATUTORY_THRESHOLD_LIGHT_TOUCH is null"
+      "tier": "statutory",
+      "parameters": [
+        "STATUTORY_THRESHOLD_GOODS_SERVICES",
+        "STATUTORY_THRESHOLD_WORKS_CONCESSIONS",
+        "STATUTORY_THRESHOLD_LIGHT_TOUCH",
+        "STATUTORY_THRESHOLD_APPLICABLE"
+      ],
+      "reason": "STATUTORY_THRESHOLD_GOODS_SERVICES, STATUTORY_THRESHOLD_WORKS_CONCESSIONS, STATUTORY_THRESHOLD_LIGHT_TOUCH, STATUTORY_THRESHOLD_APPLICABLE null; no statutory-threshold tier computed and no value invented"
     },
     {
       "test": "off_contract",
-      "tier": "STATUTORY_THRESHOLD_LIGHT_TOUCH",
-      "reason": "STATUTORY_THRESHOLD_LIGHT_TOUCH is null"
-    },
-    {
-      "test": "high_value_suppliers",
-      "tier": "STATUTORY_THRESHOLD_RELEVANT",
-      "reason": "STATUTORY_THRESHOLD_RELEVANT is null"
-    },
-    {
-      "test": "off_contract",
-      "tier": "STATUTORY_THRESHOLD_RELEVANT",
-      "reason": "STATUTORY_THRESHOLD_RELEVANT is null"
+      "tier": "statutory",
+      "parameters": [
+        "STATUTORY_THRESHOLD_GOODS_SERVICES",
+        "STATUTORY_THRESHOLD_WORKS_CONCESSIONS",
+        "STATUTORY_THRESHOLD_LIGHT_TOUCH",
+        "STATUTORY_THRESHOLD_APPLICABLE"
+      ],
+      "reason": "STATUTORY_THRESHOLD_GOODS_SERVICES, STATUTORY_THRESHOLD_WORKS_CONCESSIONS, STATUTORY_THRESHOLD_LIGHT_TOUCH, STATUTORY_THRESHOLD_APPLICABLE null; no statutory-threshold tier computed and no value invented"
     }
   ],
   "contracts": {
@@ -394,7 +419,9 @@
       "2026-09-09"
     ],
     "warnings": [
-      "Some end-date-active notices start after the spend window. Listed for traceability; these future notices are excluded from matching and spend-vs-award."
+      "1 active notice(s) start after the spend window ends. They stay in the matching set (active = end date on/after window start or blank) but are not 'live' for spend_vs_award.",
+      "Publication years with kept notices below half the median (19.0) per year: 2021=7, 2026=5. Published range is 2021-02-23 to 2026-09-09, so first/last years may be partial; a thin year may also mean notices published elsewhere or an export limit. Completeness review required.",
+      "Rules CPR-70, CPR-72 require contract notices on the CDP; contracts.csv is a Contracts Finder export, so awards published only on the CDP/Find a Tender are not in it. Read thin recent years and 'none' matches with this in mind."
     ],
     "caveat": "contracts.csv holds published *notices*, not a contract register. It holds awards published on Contracts Finder in roughly the last five years. A contract awarded earlier (e.g. long-running waste or highways contracts), one advertised only on Find a Tender, a framework call-off recorded under another buyer, or an exempt placement will have no notice here. \"No notice found\" is therefore an indicator to check against the council's contract register, never evidence of off-contract spend.",
     "rows_dropped_other_buyers": 9,
@@ -422,16 +449,67 @@
     },
     "active_definition": "End date on/after spend window start, or blank end date (guide's notice-coverage proxy).",
     "starts_after_window": 1,
+    "thin_year_rule": "a publication year (kept notices) below half the median across years in the published range",
+    "median_notices_per_year": 19.0,
+    "thin_years": {
+      "2021": 7,
+      "2026": 5
+    },
     "register_rows": 0
   },
   "matching": {
-    "none": 1031,
     "exact": 43,
-    "near_contain": 6,
     "near_ratio": 3,
+    "near_contain": 6,
+    "none": 1031,
+    "spend_suppliers": 1083,
+    "matched_against": "active notice suppliers (end date on/after spend window start, or blank) plus active register rows",
+    "active_notice_supplier_pairs": 131,
     "near_matches_file": "outputs/analytics-full/near-matches.csv",
-    "near_matches_require_human_confirmation": true
+    "supplier_match_file": "outputs/analytics-full/supplier-match.csv",
+    "near_matches_require_human_confirmation": true,
+    "near_matches_counted_as_matches": false
   },
+  "interpretation_rules": {
+    "anti_avoidance": {
+      "rule_ids": [
+        "CPR-12"
+      ],
+      "use": "no artificial splitting; cited by split_purchases and threshold_clustering"
+    },
+    "placement_exemption": {
+      "clause": "App C row F",
+      "rule_ids": [
+        "CPR-81"
+      ],
+      "use": "individually chosen care/education placements are exempt from competition; placement tag reported separately"
+    },
+    "extension": {
+      "clause": "App C row D",
+      "rule_ids": [
+        "CPR-78"
+      ],
+      "use": "S151 approval for extensions; cited by expired_notice_spend"
+    },
+    "variation": {
+      "clause": "App C row E",
+      "rule_ids": [
+        "CPR-79",
+        "CPR-80"
+      ],
+      "use": "approval for variations; cited by spend_vs_award"
+    },
+    "grant_is_contract": {
+      "clause": "1.6.2",
+      "rule_ids": [],
+      "in_rules_json_excluded": true,
+      "excluded_reason": "item in the 1.6 definition",
+      "use": "grants and Transfer Payment rows are tagged, never excluded; rules.json lists 1.6.2 under 'excluded', so it is cited by clause only"
+    }
+  },
+  "method_notes": [
+    "Lowest competition-triggering threshold is 1000.0 (rules CPR-68; required_action: Seek at least one quote from an appropriate source.). The agent spec counts any quote or tender requirement as competition-triggering, so split_purchases and high_value_suppliers run at this tier; high_value_suppliers.tiers and split_purchases.tiers report each higher competition-triggering threshold separately."
+  ],
   "tests": {
     "threshold_clustering": {
       "parameters": {
@@ -441,80 +519,28 @@
       },
       "rule_ids": [
         "CPR-04",
-        "CPR-06",
-        "CPR-07",
+        "CPR-12",
         "CPR-20",
         "CPR-23",
         "CPR-24",
+        "CPR-52",
+        "CPR-65",
         "CPR-66",
         "CPR-67",
         "CPR-68",
         "CPR-69",
-        "CPR-70",
         "CPR-71",
-        "CPR-72"
+        "CPR-73"
       ],
-      "count": 732,
-      "gbp": 3138493.47,
+      "count": 369,
+      "gbp": 1407004.35,
       "count_definition": "distinct payments flagged at one or more thresholds",
       "tiers": [
-        {
-          "threshold": 500.0,
-          "inclusive": false,
-          "rule_ids": [
-            "CPR-06"
-          ],
-          "count": 0,
-          "amount_pence": 0,
-          "gbp": 0.0,
-          "comparator": {
-            "count": 233,
-            "gbp": 123198.18
-          },
-          "baseline": {
-            "count": 1213,
-            "gbp": 745727.06
-          },
-          "supplier_concentration": [],
-          "by_tag": {
-            "general_procurement": {
-              "rows": 0,
-              "amount_pence": 0,
-              "gbp": 0.0,
-              "suppliers": 0
-            },
-            "care_or_education_placement": {
-              "rows": 0,
-              "amount_pence": 0,
-              "gbp": 0.0,
-              "suppliers": 0
-            },
-            "grant": {
-              "rows": 0,
-              "amount_pence": 0,
-              "gbp": 0.0,
-              "suppliers": 0
-            },
-            "agency_staff": {
-              "rows": 0,
-              "amount_pence": 0,
-              "gbp": 0.0,
-              "suppliers": 0
-            },
-            "premises_non_procurement": {
-              "rows": 0,
-              "amount_pence": 0,
-              "gbp": 0.0,
-              "suppliers": 0
-            }
-          },
-          "top20": []
-        },
         {
           "threshold": 1000.0,
           "inclusive": false,
           "rule_ids": [
-            "CPR-69"
+            "CPR-68"
           ],
           "count": 323,
           "amount_pence": 30719168,
@@ -1005,506 +1031,12 @@
           ]
         },
         {
-          "threshold": 5000.0,
-          "inclusive": false,
-          "rule_ids": [
-            "CPR-07"
-          ],
-          "count": 363,
-          "amount_pence": 173148912,
-          "gbp": 1731489.12,
-          "comparator": {
-            "count": 402,
-            "gbp": 2102871.18
-          },
-          "baseline": {
-            "count": 2905,
-            "gbp": 13298876.1
-          },
-          "supplier_concentration": [
-            {
-              "supplier_norm": "BUPA CARE SERVICES",
-              "count": 53
-            },
-            {
-              "supplier_norm": "GCH",
-              "count": 16
-            },
-            {
-              "supplier_norm": "PURLEY PARK TRUST",
-              "count": 15
-            },
-            {
-              "supplier_norm": "FIDELITY HEALTHCARE",
-              "count": 15
-            },
-            {
-              "supplier_norm": "SM VOICE ADVOCACY",
-              "count": 13
-            },
-            {
-              "supplier_norm": "ABI SUPPORT",
-              "count": 11
-            },
-            {
-              "supplier_norm": "AFFINITY TRUST SUPPORT",
-              "count": 11
-            },
-            {
-              "supplier_norm": "AMS CARE WILTSHIRE",
-              "count": 9
-            },
-            {
-              "supplier_norm": "CANARY CARE SERVICES",
-              "count": 9
-            },
-            {
-              "supplier_norm": "DIMENSIONS",
-              "count": 9
-            },
-            {
-              "supplier_norm": "TOP CLASS QUALITY SERVICES",
-              "count": 8
-            },
-            {
-              "supplier_norm": "SUNLIGHT HOMECARE SERVICES",
-              "count": 8
-            },
-            {
-              "supplier_norm": "NORTHCOURT LODGE RESIDENTIAL CARE HOME",
-              "count": 6
-            },
-            {
-              "supplier_norm": "BAILEYS OF NEWBURY",
-              "count": 4
-            },
-            {
-              "supplier_norm": "GRACEWELL HEALTHCARE",
-              "count": 4
-            },
-            {
-              "supplier_norm": "PURESOUL CARE",
-              "count": 4
-            },
-            {
-              "supplier_norm": "NOUBLES HEALTHCARE",
-              "count": 4
-            },
-            {
-              "supplier_norm": "BRIGHTER LIVING CARE",
-              "count": 4
-            },
-            {
-              "supplier_norm": "THINKEMPATHY",
-              "count": 4
-            },
-            {
-              "supplier_norm": "VOYAGE CARE",
-              "count": 4
-            }
-          ],
-          "by_tag": {
-            "general_procurement": {
-              "rows": 48,
-              "amount_pence": 22938132,
-              "gbp": 229381.32,
-              "suppliers": 34
-            },
-            "care_or_education_placement": {
-              "rows": 290,
-              "amount_pence": 138393173,
-              "gbp": 1383931.73,
-              "suppliers": 59
-            },
-            "grant": {
-              "rows": 22,
-              "amount_pence": 10413607,
-              "gbp": 104136.07,
-              "suppliers": 12
-            },
-            "agency_staff": {
-              "rows": 0,
-              "amount_pence": 0,
-              "gbp": 0.0,
-              "suppliers": 0
-            },
-            "premises_non_procurement": {
-              "rows": 3,
-              "amount_pence": 1404000,
-              "gbp": 14040.0,
-              "suppliers": 1
-            }
-          },
-          "top20": [
-            {
-              "Service": "Adult Social Care",
-              "Expenditure category": "Third Party Payments",
-              "Narrative": "Private Contractors",
-              "Date": "2026-05-20T08:47:44.180",
-              "Net amount": "5000.00",
-              "Supplier name": "GCH (Alder) Ltd t/a Hungerford Care Home",
-              "source_file": "Over500_2026_P02_-_published.xlsx",
-              "source_sheet": "Data to publish",
-              "source_row": 1067,
-              "row_id": "Over500_2026_P02_-_published.xlsx:1067",
-              "pay_date": "2026-05-20",
-              "amount_pence": 500000,
-              "supplier_norm": "GCH",
-              "company_number": "",
-              "tag": "care_or_education_placement",
-              "exclusion": ""
-            },
-            {
-              "Service": "Finance, Property & Procurement",
-              "Expenditure category": "Supplies & Services",
-              "Narrative": "Insurance Premiums",
-              "Date": "2026-06-02T02:14:24.060",
-              "Net amount": "5000.00",
-              "Supplier name": "Zurich",
-              "source_file": "Over500_2026_P03_-_published.xlsx",
-              "source_sheet": "Data to publish",
-              "source_row": 652,
-              "row_id": "Over500_2026_P03_-_published.xlsx:652",
-              "pay_date": "2026-06-02",
-              "amount_pence": 500000,
-              "supplier_norm": "ZURICH",
-              "company_number": "",
-              "tag": "general_procurement",
-              "exclusion": ""
-            },
-            {
-              "Service": "Finance, Property & Procurement",
-              "Expenditure category": "Supplies & Services",
-              "Narrative": "Insurance Premiums",
-              "Date": "2026-06-30T17:53:09.320",
-              "Net amount": "5000.00",
-              "Supplier name": "Zurich",
-              "source_file": "Over500_2026_P03_-_published.xlsx",
-              "source_sheet": "Data to publish",
-              "source_row": 654,
-              "row_id": "Over500_2026_P03_-_published.xlsx:654",
-              "pay_date": "2026-06-30",
-              "amount_pence": 500000,
-              "supplier_norm": "ZURICH",
-              "company_number": "",
-              "tag": "general_procurement",
-              "exclusion": ""
-            },
-            {
-              "Service": "Adult Social Care",
-              "Expenditure category": "Third Party Payments",
-              "Narrative": "Private Contractors",
-              "Date": "2026-06-17T10:32:49.720",
-              "Net amount": "5000.00",
-              "Supplier name": "GCH (Alder) Ltd t/a Hungerford Care Home",
-              "source_file": "Over500_2026_P03_-_published.xlsx",
-              "source_sheet": "Data to publish",
-              "source_row": 963,
-              "row_id": "Over500_2026_P03_-_published.xlsx:963",
-              "pay_date": "2026-06-17",
-              "amount_pence": 500000,
-              "supplier_norm": "GCH",
-              "company_number": "",
-              "tag": "care_or_education_placement",
-              "exclusion": ""
-            },
-            {
-              "Service": "Adult Social Care",
-              "Expenditure category": "Third Party Payments",
-              "Narrative": "Private Contractors",
-              "Date": "2026-07-08T10:43:22.513",
-              "Net amount": "5000.00",
-              "Supplier name": "Navara Lodge",
-              "source_file": "Over500_2026_P04_-_published.xlsx",
-              "source_sheet": "Data to publish",
-              "source_row": 1109,
-              "row_id": "Over500_2026_P04_-_published.xlsx:1109",
-              "pay_date": "2026-07-08",
-              "amount_pence": 500000,
-              "supplier_norm": "NAVARA LODGE",
-              "company_number": "",
-              "tag": "care_or_education_placement",
-              "exclusion": ""
-            },
-            {
-              "Service": "Adult Social Care",
-              "Expenditure category": "Third Party Payments",
-              "Narrative": "Private Contractors",
-              "Date": "2026-07-08T10:43:22.513",
-              "Net amount": "5000.00",
-              "Supplier name": "BUPA Care Services",
-              "source_file": "Over500_2026_P04_-_published.xlsx",
-              "source_sheet": "Data to publish",
-              "source_row": 1156,
-              "row_id": "Over500_2026_P04_-_published.xlsx:1156",
-              "pay_date": "2026-07-08",
-              "amount_pence": 500000,
-              "supplier_norm": "BUPA CARE SERVICES",
-              "company_number": "",
-              "tag": "care_or_education_placement",
-              "exclusion": ""
-            },
-            {
-              "Service": "Education & SEND",
-              "Expenditure category": "Supplies & Services",
-              "Narrative": "Grants",
-              "Date": "2026-07-01T15:23:26.980",
-              "Net amount": "5000.00",
-              "Supplier name": "Creative Communities CIC",
-              "source_file": "Over500_2026_P04_-_published.xlsx",
-              "source_sheet": "Data to publish",
-              "source_row": 1270,
-              "row_id": "Over500_2026_P04_-_published.xlsx:1270",
-              "pay_date": "2026-07-01",
-              "amount_pence": 500000,
-              "supplier_norm": "CREATIVE COMMUNITIES",
-              "company_number": "",
-              "tag": "grant",
-              "exclusion": ""
-            },
-            {
-              "Service": "Adult Social Care",
-              "Expenditure category": "Third Party Payments",
-              "Narrative": "Private Contractors",
-              "Date": "2026-07-15T10:33:10.383",
-              "Net amount": "5000.00",
-              "Supplier name": "GCH (Alder) Ltd t/a Hungerford Care Home",
-              "source_file": "Over500_2026_P04_-_published.xlsx",
-              "source_sheet": "Data to publish",
-              "source_row": 1854,
-              "row_id": "Over500_2026_P04_-_published.xlsx:1854",
-              "pay_date": "2026-07-15",
-              "amount_pence": 500000,
-              "supplier_norm": "GCH",
-              "company_number": "",
-              "tag": "care_or_education_placement",
-              "exclusion": ""
-            },
-            {
-              "Service": "Community Services",
-              "Expenditure category": "Supplies & Services",
-              "Narrative": "Ex-Gratia payment",
-              "Date": "2026-07-31T13:07:33.510",
-              "Net amount": "5000.00",
-              "Supplier name": "GREENHAM TRUST LTD",
-              "source_file": "Over500_2026_P04_-_published.xlsx",
-              "source_sheet": "Data to publish",
-              "source_row": 633,
-              "row_id": "Over500_2026_P04_-_published.xlsx:633",
-              "pay_date": "2026-07-31",
-              "amount_pence": 500000,
-              "supplier_norm": "GREENHAM TRUST",
-              "company_number": "",
-              "tag": "general_procurement",
-              "exclusion": ""
-            },
-            {
-              "Service": "Finance, Property & Procurement",
-              "Expenditure category": "Supplies & Services",
-              "Narrative": "Insurance Premiums",
-              "Date": "2026-07-30T17:53:29.980",
-              "Net amount": "5000.00",
-              "Supplier name": "Zurich",
-              "source_file": "Over500_2026_P04_-_published.xlsx",
-              "source_sheet": "Data to publish",
-              "source_row": 781,
-              "row_id": "Over500_2026_P04_-_published.xlsx:781",
-              "pay_date": "2026-07-30",
-              "amount_pence": 500000,
-              "supplier_norm": "ZURICH",
-              "company_number": "",
-              "tag": "general_procurement",
-              "exclusion": ""
-            },
-            {
-              "Service": "Development & Housing",
-              "Expenditure category": "Supplies & Services",
-              "Narrative": "IT",
-              "Date": "2026-05-29T09:45:59.863",
-              "Net amount": "4995.00",
-              "Supplier name": "CIVICA  UK LTD",
-              "source_file": "Over500_2026_P02_-_published.xlsx",
-              "source_sheet": "Data to publish",
-              "source_row": 465,
-              "row_id": "Over500_2026_P02_-_published.xlsx:465",
-              "pay_date": "2026-05-29",
-              "amount_pence": 499500,
-              "supplier_norm": "CIVICA",
-              "company_number": "",
-              "tag": "general_procurement",
-              "exclusion": ""
-            },
-            {
-              "Service": "Adult Social Care",
-              "Expenditure category": "Third Party Payments",
-              "Narrative": "Private Contractors",
-              "Date": "2026-06-24T11:15:58.517",
-              "Net amount": "4991.67",
-              "Supplier name": "Sunlight Homecare Services Ltd",
-              "source_file": "Over500_2026_P03_-_published.xlsx",
-              "source_sheet": "Data to publish",
-              "source_row": 1714,
-              "row_id": "Over500_2026_P03_-_published.xlsx:1714",
-              "pay_date": "2026-06-24",
-              "amount_pence": 499167,
-              "supplier_norm": "SUNLIGHT HOMECARE SERVICES",
-              "company_number": "",
-              "tag": "care_or_education_placement",
-              "exclusion": ""
-            },
-            {
-              "Service": "Adult Social Care",
-              "Expenditure category": "Third Party Payments",
-              "Narrative": "Voluntary Associations",
-              "Date": "2026-06-10T09:51:27.507",
-              "Net amount": "4988.24",
-              "Supplier name": "BRENDONCARE FOUNDATION (FROXFIELD)",
-              "source_file": "Over500_2026_P03_-_published.xlsx",
-              "source_sheet": "Data to publish",
-              "source_row": 2668,
-              "row_id": "Over500_2026_P03_-_published.xlsx:2668",
-              "pay_date": "2026-06-10",
-              "amount_pence": 498824,
-              "supplier_norm": "BRENDONCARE FOUNDATION",
-              "company_number": "",
-              "tag": "care_or_education_placement",
-              "exclusion": ""
-            },
-            {
-              "Service": "Adult Social Care",
-              "Expenditure category": "Third Party Payments",
-              "Narrative": "Voluntary Associations",
-              "Date": "2026-07-08T10:43:22.513",
-              "Net amount": "4988.24",
-              "Supplier name": "BRENDONCARE FOUNDATION (FROXFIELD)",
-              "source_file": "Over500_2026_P04_-_published.xlsx",
-              "source_sheet": "Data to publish",
-              "source_row": 648,
-              "row_id": "Over500_2026_P04_-_published.xlsx:648",
-              "pay_date": "2026-07-08",
-              "amount_pence": 498824,
-              "supplier_norm": "BRENDONCARE FOUNDATION",
-              "company_number": "",
-              "tag": "care_or_education_placement",
-              "exclusion": ""
-            },
-            {
-              "Service": "Education & SEND",
-              "Expenditure category": "Supplies & Services",
-              "Narrative": "Professional Fees",
-              "Date": "2026-07-01T09:54:22.677",
-              "Net amount": "4987.50",
-              "Supplier name": "Helen Redding Education Consultancy Ltd",
-              "source_file": "Over500_2026_P04_-_published.xlsx",
-              "source_sheet": "Data to publish",
-              "source_row": 551,
-              "row_id": "Over500_2026_P04_-_published.xlsx:551",
-              "pay_date": "2026-07-01",
-              "amount_pence": 498750,
-              "supplier_norm": "HELEN REDDING EDUCATION CONSULTANCY",
-              "company_number": "",
-              "tag": "general_procurement",
-              "exclusion": ""
-            },
-            {
-              "Service": "Children's Social Care",
-              "Expenditure category": "Third Party Payments",
-              "Narrative": "Private Contractors",
-              "Date": "2026-07-17T16:36:29.540",
-              "Net amount": "4987.16",
-              "Supplier name": "Young People at Heart Ltd",
-              "source_file": "Over500_2026_P04_-_published.xlsx",
-              "source_sheet": "Data to publish",
-              "source_row": 3102,
-              "row_id": "Over500_2026_P04_-_published.xlsx:3102",
-              "pay_date": "2026-07-17",
-              "amount_pence": 498716,
-              "supplier_norm": "YOUNG PEOPLE AT HEART",
-              "company_number": "",
-              "tag": "care_or_education_placement",
-              "exclusion": ""
-            },
-            {
-              "Service": "Children's Social Care",
-              "Expenditure category": "Third Party Payments",
-              "Narrative": "Private Contractors",
-              "Date": "2026-06-03T10:15:15.200",
-              "Net amount": "4985.87",
-              "Supplier name": "Young People at Heart Ltd",
-              "source_file": "Over500_2026_P03_-_published.xlsx",
-              "source_sheet": "Data to publish",
-              "source_row": 3053,
-              "row_id": "Over500_2026_P03_-_published.xlsx:3053",
-              "pay_date": "2026-06-03",
-              "amount_pence": 498587,
-              "supplier_norm": "YOUNG PEOPLE AT HEART",
-              "company_number": "",
-              "tag": "care_or_education_placement",
-              "exclusion": ""
-            },
-            {
-              "Service": "Adult Social Care",
-              "Expenditure category": "Third Party Payments",
-              "Narrative": "Private Contractors",
-              "Date": "2026-07-08T10:43:22.513",
-              "Net amount": "4983.44",
-              "Supplier name": "SM Voice Advocacy Limited",
-              "source_file": "Over500_2026_P04_-_published.xlsx",
-              "source_sheet": "Data to publish",
-              "source_row": 2328,
-              "row_id": "Over500_2026_P04_-_published.xlsx:2328",
-              "pay_date": "2026-07-08",
-              "amount_pence": 498344,
-              "supplier_norm": "SM VOICE ADVOCACY",
-              "company_number": "",
-              "tag": "care_or_education_placement",
-              "exclusion": ""
-            },
-            {
-              "Service": "Adult Social Care",
-              "Expenditure category": "Third Party Payments",
-              "Narrative": "Private Contractors",
-              "Date": "2026-07-29T11:34:52.340",
-              "Net amount": "4983.44",
-              "Supplier name": "SM Voice Advocacy Limited",
-              "source_file": "Over500_2026_P04_-_published.xlsx",
-              "source_sheet": "Data to publish",
-              "source_row": 2530,
-              "row_id": "Over500_2026_P04_-_published.xlsx:2530",
-              "pay_date": "2026-07-29",
-              "amount_pence": 498344,
-              "supplier_norm": "SM VOICE ADVOCACY",
-              "company_number": "",
-              "tag": "care_or_education_placement",
-              "exclusion": ""
-            },
-            {
-              "Service": "Adult Social Care",
-              "Expenditure category": "Third Party Payments",
-              "Narrative": "Private Contractors",
-              "Date": "2026-06-24T10:35:07.460",
-              "Net amount": "4983.08",
-              "Supplier name": "PURLEY PARK TRUST LTD",
-              "source_file": "Over500_2026_P03_-_published.xlsx",
-              "source_sheet": "Data to publish",
-              "source_row": 1658,
-              "row_id": "Over500_2026_P03_-_published.xlsx:1658",
-              "pay_date": "2026-06-24",
-              "amount_pence": 498308,
-              "supplier_norm": "PURLEY PARK TRUST",
-              "company_number": "",
-              "tag": "care_or_education_placement",
-              "exclusion": ""
-            }
-          ]
-        },
-        {
           "threshold": 25000.0,
           "inclusive": true,
           "rule_ids": [
             "CPR-20",
+            "CPR-68",
             "CPR-69",
-            "CPR-70",
             "CPR-71"
           ],
           "count": 46,
@@ -2002,10 +1534,11 @@
             "CPR-04",
             "CPR-23",
             "CPR-24",
+            "CPR-52",
+            "CPR-65",
             "CPR-66",
-            "CPR-67",
             "CPR-71",
-            "CPR-72"
+            "CPR-73"
           ],
           "count": 0,
           "amount_pence": 0,
@@ -2057,8 +1590,8 @@
           "threshold": 2500000.0,
           "inclusive": true,
           "rule_ids": [
-            "CPR-67",
-            "CPR-68"
+            "CPR-66",
+            "CPR-67"
           ],
           "count": 0,
           "amount_pence": 0,
@@ -2118,34 +1651,36 @@
       },
       "rule_ids": [
         "CPR-04",
+        "CPR-12",
         "CPR-20",
         "CPR-23",
         "CPR-24",
+        "CPR-52",
+        "CPR-65",
         "CPR-66",
-        "CPR-67",
+        "CPR-68",
         "CPR-69",
-        "CPR-70",
         "CPR-71",
-        "CPR-72"
+        "CPR-73"
       ],
-      "count": 175,
-      "count_definition": "general-procurement windows summed across thresholds; may share payments across thresholds",
-      "gbp": 8869866.31,
+      "count": 176,
+      "count_definition": "general-procurement windows summed across thresholds; the same payments can appear at more than one threshold, so quote per-tier figures",
+      "gbp": 8871108.31,
       "tiers": [
         {
           "threshold": 1000.0,
           "rule_ids": [
-            "CPR-69"
+            "CPR-68"
           ],
           "windows": 241,
           "suppliers": 164,
           "gbp": 1214420.67,
           "by_tag": {
             "general_procurement": {
-              "rows": 108,
-              "amount_pence": 29333413,
-              "gbp": 293334.13,
-              "suppliers": 80
+              "rows": 109,
+              "amount_pence": 29457613,
+              "gbp": 294576.13,
+              "suppliers": 81
             },
             "care_or_education_placement": {
               "rows": 117,
@@ -2166,15 +1701,16 @@
               "suppliers": 2
             },
             "premises_non_procurement": {
-              "rows": 11,
-              "amount_pence": 5116431,
-              "gbp": 51164.31,
-              "suppliers": 8
+              "rows": 10,
+              "amount_pence": 4992231,
+              "gbp": 49922.31,
+              "suppliers": 7
             }
           },
+          "by_tag_unit": "rows = windows (tag = dominant tag by GBP within the window); gbp = window totals",
           "headline": {
-            "windows": 108,
-            "gbp": 293334.13
+            "windows": 109,
+            "gbp": 294576.13
           },
           "placements": {
             "windows": 117,
@@ -2251,7 +1787,7 @@
               "effective_trigger_pence": 100001,
               "window_id": "SPLIT-f66a7dc3cf9eab",
               "rule_ids": [
-                "CPR-69"
+                "CPR-68"
               ]
             },
             {
@@ -2326,7 +1862,7 @@
               "effective_trigger_pence": 100001,
               "window_id": "SPLIT-e37c6518398c58",
               "rule_ids": [
-                "CPR-69"
+                "CPR-68"
               ]
             },
             {
@@ -2402,7 +1938,7 @@
               "effective_trigger_pence": 100001,
               "window_id": "SPLIT-a50e1db592f7bb",
               "rule_ids": [
-                "CPR-69"
+                "CPR-68"
               ]
             },
             {
@@ -2473,7 +2009,7 @@
               "effective_trigger_pence": 100001,
               "window_id": "SPLIT-3b4b458a006a78",
               "rule_ids": [
-                "CPR-69"
+                "CPR-68"
               ]
             },
             {
@@ -2536,7 +2072,7 @@
               "effective_trigger_pence": 100001,
               "window_id": "SPLIT-c0b488f8edf91c",
               "rule_ids": [
-                "CPR-69"
+                "CPR-68"
               ]
             },
             {
@@ -2594,7 +2130,7 @@
               "effective_trigger_pence": 100001,
               "window_id": "SPLIT-79afcc458cf5a2",
               "rule_ids": [
-                "CPR-69"
+                "CPR-68"
               ]
             },
             {
@@ -2653,7 +2189,7 @@
               "effective_trigger_pence": 100001,
               "window_id": "SPLIT-e87a6601785cf5",
               "rule_ids": [
-                "CPR-69"
+                "CPR-68"
               ]
             },
             {
@@ -2712,7 +2248,7 @@
               "effective_trigger_pence": 100001,
               "window_id": "SPLIT-8bcdf91a6b0f65",
               "rule_ids": [
-                "CPR-69"
+                "CPR-68"
               ]
             },
             {
@@ -2769,7 +2305,7 @@
               "effective_trigger_pence": 100001,
               "window_id": "SPLIT-cec9f5db18c41a",
               "rule_ids": [
-                "CPR-69"
+                "CPR-68"
               ]
             },
             {
@@ -2826,7 +2362,7 @@
               "effective_trigger_pence": 100001,
               "window_id": "SPLIT-17079e7bf43dc0",
               "rule_ids": [
-                "CPR-69"
+                "CPR-68"
               ]
             },
             {
@@ -2881,7 +2417,7 @@
               "effective_trigger_pence": 100001,
               "window_id": "SPLIT-984f6bb79dc76d",
               "rule_ids": [
-                "CPR-69"
+                "CPR-68"
               ]
             },
             {
@@ -2937,7 +2473,7 @@
               "effective_trigger_pence": 100001,
               "window_id": "SPLIT-e7e6cab34d3bee",
               "rule_ids": [
-                "CPR-69"
+                "CPR-68"
               ]
             },
             {
@@ -2989,7 +2525,7 @@
               "effective_trigger_pence": 100001,
               "window_id": "SPLIT-2718431e01203e",
               "rule_ids": [
-                "CPR-69"
+                "CPR-68"
               ]
             },
             {
@@ -3042,7 +2578,7 @@
               "effective_trigger_pence": 100001,
               "window_id": "SPLIT-0f147c9cd6cb39",
               "rule_ids": [
-                "CPR-69"
+                "CPR-68"
               ]
             },
             {
@@ -3094,7 +2630,7 @@
               "effective_trigger_pence": 100001,
               "window_id": "SPLIT-4ed6c57b0f7352",
               "rule_ids": [
-                "CPR-69"
+                "CPR-68"
               ]
             },
             {
@@ -3141,7 +2677,7 @@
               "effective_trigger_pence": 100001,
               "window_id": "SPLIT-811508cec5afa7",
               "rule_ids": [
-                "CPR-69"
+                "CPR-68"
               ]
             },
             {
@@ -3193,7 +2729,7 @@
               "effective_trigger_pence": 100001,
               "window_id": "SPLIT-0fc681adde2494",
               "rule_ids": [
-                "CPR-69"
+                "CPR-68"
               ]
             },
             {
@@ -3243,7 +2779,7 @@
               "effective_trigger_pence": 100001,
               "window_id": "SPLIT-96674bdf1ebd96",
               "rule_ids": [
-                "CPR-69"
+                "CPR-68"
               ]
             },
             {
@@ -3293,7 +2829,7 @@
               "effective_trigger_pence": 100001,
               "window_id": "SPLIT-181d1c0a879db8",
               "rule_ids": [
-                "CPR-69"
+                "CPR-68"
               ]
             },
             {
@@ -3340,7 +2876,7 @@
               "effective_trigger_pence": 100001,
               "window_id": "SPLIT-ada1c341139031",
               "rule_ids": [
-                "CPR-69"
+                "CPR-68"
               ]
             }
           ]
@@ -3349,8 +2885,8 @@
           "threshold": 25000.0,
           "rule_ids": [
             "CPR-20",
+            "CPR-68",
             "CPR-69",
-            "CPR-70",
             "CPR-71"
           ],
           "windows": 251,
@@ -3388,6 +2924,7 @@
               "suppliers": 2
             }
           },
+          "by_tag_unit": "rows = windows (tag = dominant tag by GBP within the window); gbp = window totals",
           "headline": {
             "windows": 64,
             "gbp": 3442571.49
@@ -3672,8 +3209,8 @@
               "window_id": "SPLIT-0a921e7928edd4",
               "rule_ids": [
                 "CPR-20",
+                "CPR-68",
                 "CPR-69",
-                "CPR-70",
                 "CPR-71"
               ]
             },
@@ -3757,8 +3294,8 @@
               "window_id": "SPLIT-ae9a11e4a5142d",
               "rule_ids": [
                 "CPR-20",
+                "CPR-68",
                 "CPR-69",
-                "CPR-70",
                 "CPR-71"
               ]
             },
@@ -3968,8 +3505,8 @@
               "window_id": "SPLIT-4b085d9ae8c477",
               "rule_ids": [
                 "CPR-20",
+                "CPR-68",
                 "CPR-69",
-                "CPR-70",
                 "CPR-71"
               ]
             },
@@ -4119,8 +3656,8 @@
               "window_id": "SPLIT-5876666d191576",
               "rule_ids": [
                 "CPR-20",
+                "CPR-68",
                 "CPR-69",
-                "CPR-70",
                 "CPR-71"
               ]
             },
@@ -4168,8 +3705,8 @@
               "window_id": "SPLIT-3bfb4623e464bc",
               "rule_ids": [
                 "CPR-20",
+                "CPR-68",
                 "CPR-69",
-                "CPR-70",
                 "CPR-71"
               ]
             },
@@ -4266,8 +3803,8 @@
               "window_id": "SPLIT-d34a3fab039e02",
               "rule_ids": [
                 "CPR-20",
+                "CPR-68",
                 "CPR-69",
-                "CPR-70",
                 "CPR-71"
               ]
             },
@@ -4341,8 +3878,8 @@
               "window_id": "SPLIT-82bf3b7e8e43f2",
               "rule_ids": [
                 "CPR-20",
+                "CPR-68",
                 "CPR-69",
-                "CPR-70",
                 "CPR-71"
               ]
             },
@@ -4431,8 +3968,8 @@
               "window_id": "SPLIT-aecf4442fc3776",
               "rule_ids": [
                 "CPR-20",
+                "CPR-68",
                 "CPR-69",
-                "CPR-70",
                 "CPR-71"
               ]
             },
@@ -4527,8 +4064,8 @@
               "window_id": "SPLIT-09f3d2b4df76c9",
               "rule_ids": [
                 "CPR-20",
+                "CPR-68",
                 "CPR-69",
-                "CPR-70",
                 "CPR-71"
               ]
             },
@@ -4721,8 +4258,8 @@
               "window_id": "SPLIT-8e0aae62583ac5",
               "rule_ids": [
                 "CPR-20",
+                "CPR-68",
                 "CPR-69",
-                "CPR-70",
                 "CPR-71"
               ]
             },
@@ -4767,8 +4304,8 @@
               "window_id": "SPLIT-8e4cd542eb63e0",
               "rule_ids": [
                 "CPR-20",
+                "CPR-68",
                 "CPR-69",
-                "CPR-70",
                 "CPR-71"
               ]
             },
@@ -4835,8 +4372,8 @@
               "window_id": "SPLIT-ec6ec53850620f",
               "rule_ids": [
                 "CPR-20",
+                "CPR-68",
                 "CPR-69",
-                "CPR-70",
                 "CPR-71"
               ]
             },
@@ -4898,8 +4435,8 @@
               "window_id": "SPLIT-269f212a29a94f",
               "rule_ids": [
                 "CPR-20",
+                "CPR-68",
                 "CPR-69",
-                "CPR-70",
                 "CPR-71"
               ]
             },
@@ -4983,8 +4520,8 @@
               "window_id": "SPLIT-084c26d658c67a",
               "rule_ids": [
                 "CPR-20",
+                "CPR-68",
                 "CPR-69",
-                "CPR-70",
                 "CPR-71"
               ]
             },
@@ -5053,8 +4590,8 @@
               "window_id": "SPLIT-53ed60db5467a3",
               "rule_ids": [
                 "CPR-20",
+                "CPR-68",
                 "CPR-69",
-                "CPR-70",
                 "CPR-71"
               ]
             },
@@ -5140,8 +4677,8 @@
               "window_id": "SPLIT-d0db12464af886",
               "rule_ids": [
                 "CPR-20",
+                "CPR-68",
                 "CPR-69",
-                "CPR-70",
                 "CPR-71"
               ]
             },
@@ -5207,8 +4744,8 @@
               "window_id": "SPLIT-60b9b4b6dc438e",
               "rule_ids": [
                 "CPR-20",
+                "CPR-68",
                 "CPR-69",
-                "CPR-70",
                 "CPR-71"
               ]
             },
@@ -5277,8 +4814,8 @@
               "window_id": "SPLIT-40c15a5dba7923",
               "rule_ids": [
                 "CPR-20",
+                "CPR-68",
                 "CPR-69",
-                "CPR-70",
                 "CPR-71"
               ]
             },
@@ -5342,8 +4879,8 @@
               "window_id": "SPLIT-970f56b5686f35",
               "rule_ids": [
                 "CPR-20",
+                "CPR-68",
                 "CPR-69",
-                "CPR-70",
                 "CPR-71"
               ]
             },
@@ -5382,8 +4919,8 @@
               "window_id": "SPLIT-1ec8cdf63fda07",
               "rule_ids": [
                 "CPR-20",
+                "CPR-68",
                 "CPR-69",
-                "CPR-70",
                 "CPR-71"
               ]
             }
@@ -5395,10 +4932,11 @@
             "CPR-04",
             "CPR-23",
             "CPR-24",
+            "CPR-52",
+            "CPR-65",
             "CPR-66",
-            "CPR-67",
             "CPR-71",
-            "CPR-72"
+            "CPR-73"
           ],
           "windows": 10,
           "suppliers": 8,
@@ -5435,6 +4973,7 @@
               "suppliers": 0
             }
           },
+          "by_tag_unit": "rows = windows (tag = dominant tag by GBP within the window); gbp = window totals",
           "headline": {
             "windows": 3,
             "gbp": 5133960.69
@@ -5527,10 +5066,11 @@
                 "CPR-04",
                 "CPR-23",
                 "CPR-24",
+                "CPR-52",
+                "CPR-65",
                 "CPR-66",
-                "CPR-67",
                 "CPR-71",
-                "CPR-72"
+                "CPR-73"
               ]
             },
             {
@@ -5602,10 +5142,11 @@
                 "CPR-04",
                 "CPR-23",
                 "CPR-24",
+                "CPR-52",
+                "CPR-65",
                 "CPR-66",
-                "CPR-67",
                 "CPR-71",
-                "CPR-72"
+                "CPR-73"
               ]
             },
             {
@@ -5884,10 +5425,11 @@
                 "CPR-04",
                 "CPR-23",
                 "CPR-24",
+                "CPR-52",
+                "CPR-65",
                 "CPR-66",
-                "CPR-67",
                 "CPR-71",
-                "CPR-72"
+                "CPR-73"
               ]
             },
             {
@@ -5972,10 +5514,11 @@
                 "CPR-04",
                 "CPR-23",
                 "CPR-24",
+                "CPR-52",
+                "CPR-65",
                 "CPR-66",
-                "CPR-67",
                 "CPR-71",
-                "CPR-72"
+                "CPR-73"
               ]
             },
             {
@@ -6188,10 +5731,11 @@
                 "CPR-04",
                 "CPR-23",
                 "CPR-24",
+                "CPR-52",
+                "CPR-65",
                 "CPR-66",
-                "CPR-67",
                 "CPR-71",
-                "CPR-72"
+                "CPR-73"
               ]
             },
             {
@@ -6342,10 +5886,11 @@
                 "CPR-04",
                 "CPR-23",
                 "CPR-24",
+                "CPR-52",
+                "CPR-65",
                 "CPR-66",
-                "CPR-67",
                 "CPR-71",
-                "CPR-72"
+                "CPR-73"
               ]
             },
             {
@@ -6399,10 +5944,11 @@
                 "CPR-04",
                 "CPR-23",
                 "CPR-24",
+                "CPR-52",
+                "CPR-65",
                 "CPR-66",
-                "CPR-67",
                 "CPR-71",
-                "CPR-72"
+                "CPR-73"
               ]
             },
             {
@@ -6438,10 +5984,11 @@
                 "CPR-04",
                 "CPR-23",
                 "CPR-24",
+                "CPR-52",
+                "CPR-65",
                 "CPR-66",
-                "CPR-67",
                 "CPR-71",
-                "CPR-72"
+                "CPR-73"
               ]
             },
             {
@@ -6478,10 +6025,11 @@
                 "CPR-04",
                 "CPR-23",
                 "CPR-24",
+                "CPR-52",
+                "CPR-65",
                 "CPR-66",
-                "CPR-67",
                 "CPR-71",
-                "CPR-72"
+                "CPR-73"
               ]
             },
             {
@@ -6516,10 +6064,11 @@
                 "CPR-04",
                 "CPR-23",
                 "CPR-24",
+                "CPR-52",
+                "CPR-65",
                 "CPR-66",
-                "CPR-67",
                 "CPR-71",
-                "CPR-72"
+                "CPR-73"
               ]
             }
           ]
@@ -6531,17 +6080,23 @@
       "parameters": {
         "threshold": 1000.0,
         "inclusive": false,
-        "annualisation": "total × (12 / distinct months covered)",
-        "annualised_label": "annualised estimate"
+        "threshold_basis": "lowest competition-triggering threshold",
+        "annualisation": "total x (12 / distinct months covered)",
+        "annualised_label": "annualised estimate",
+        "dominant_tag": "tag with the largest GBP total for the supplier; multi_tag records suppliers spanning several tags",
+        "purpose": "population for which contract evidence is requested from the council during fieldwork (Phase 3 PBC list)"
       },
       "rule_ids": [
-        "CPR-69"
+        "CPR-68"
       ],
       "count": 1083,
       "gbp": 66778104.78,
+      "annualised_estimate_gbp": 267112419.12,
       "headline": {
-        "count": 508,
-        "gbp": 28289494.48,
+        "definition": "suppliers whose dominant tag is general_procurement, top 20 by annualised estimate",
+        "count": 509,
+        "gbp": 28290148.48,
+        "annualised_estimate_gbp": 113160593.92,
         "top20": [
           {
             "supplier_norm": "VOLKERHIGHWAYS",
@@ -6693,7 +6248,13 @@
               "Over500_2026_P04_-_published.xlsx:821",
               "Over500_2026_P04_-_published.xlsx:822",
               "Over500_2026_P04_-_published.xlsx:828"
-            ]
+            ],
+            "tiers_met_gbp": [
+              1000.0,
+              25000.0,
+              500000.0
+            ],
+            "match_class": "none"
           },
           {
             "supplier_norm": "VEOLIA ES WEST BERKSHIRE",
@@ -6720,7 +6281,13 @@
               "Over500_2026_P02_-_published.xlsx:2196",
               "Over500_2026_P03_-_published.xlsx:2146",
               "Over500_2026_P04_-_published.xlsx:3194"
-            ]
+            ],
+            "tiers_met_gbp": [
+              1000.0,
+              25000.0,
+              500000.0
+            ],
+            "match_class": "none"
           },
           {
             "supplier_norm": "MILLBROOK HEALTHCARE",
@@ -6748,7 +6315,13 @@
               "Over500_2026_P03_-_published.xlsx:2216",
               "Over500_2026_P04_-_published.xlsx:3311",
               "Over500_2026_P04_-_published.xlsx:3789"
-            ]
+            ],
+            "tiers_met_gbp": [
+              1000.0,
+              25000.0,
+              500000.0
+            ],
+            "match_class": "none"
           },
           {
             "supplier_norm": "BETTER GROUP",
@@ -6803,7 +6376,13 @@
               "Over500_2026_P04_-_published.xlsx:783",
               "Over500_2026_P04_-_published.xlsx:911",
               "Over500_2026_P04_-_published.xlsx:912"
-            ]
+            ],
+            "tiers_met_gbp": [
+              1000.0,
+              25000.0,
+              500000.0
+            ],
+            "match_class": "none"
           },
           {
             "supplier_norm": "SOFTWAREONE",
@@ -6832,7 +6411,13 @@
               "Over500_2026_P02_-_published.xlsx:474",
               "Over500_2026_P02_-_published.xlsx:653",
               "Over500_2026_P02_-_published.xlsx:654"
-            ]
+            ],
+            "tiers_met_gbp": [
+              1000.0,
+              25000.0,
+              500000.0
+            ],
+            "match_class": "none"
           },
           {
             "supplier_norm": "LIVITY LIFE",
@@ -6865,7 +6450,13 @@
               "Over500_2026_P04_-_published.xlsx:3197",
               "Over500_2026_P04_-_published.xlsx:3215",
               "Over500_2026_P04_-_published.xlsx:3310"
-            ]
+            ],
+            "tiers_met_gbp": [
+              1000.0,
+              25000.0,
+              500000.0
+            ],
+            "match_class": "none"
           },
           {
             "supplier_norm": "NEWBURY AND DISTRICT",
@@ -6914,7 +6505,13 @@
               "Over500_2026_P04_-_published.xlsx:358",
               "Over500_2026_P04_-_published.xlsx:361",
               "Over500_2026_P04_-_published.xlsx:363"
-            ]
+            ],
+            "tiers_met_gbp": [
+              1000.0,
+              25000.0,
+              500000.0
+            ],
+            "match_class": "exact"
           },
           {
             "supplier_norm": "E W BEARD",
@@ -6961,7 +6558,13 @@
               "Over500_2026_P04_-_published.xlsx:730",
               "Over500_2026_P04_-_published.xlsx:784",
               "Over500_2026_P04_-_published.xlsx:79"
-            ]
+            ],
+            "tiers_met_gbp": [
+              1000.0,
+              25000.0,
+              500000.0
+            ],
+            "match_class": "none"
           },
           {
             "supplier_norm": "ASCIA CONSTRUCTION",
@@ -6986,7 +6589,13 @@
             ],
             "row_ids": [
               "Over500_2026_P02_-_published.xlsx:669"
-            ]
+            ],
+            "tiers_met_gbp": [
+              1000.0,
+              25000.0,
+              500000.0
+            ],
+            "match_class": "exact"
           },
           {
             "supplier_norm": "NEC SOFTWARE SOLUTIONS",
@@ -7020,7 +6629,13 @@
               "Over500_2026_P04_-_published.xlsx:904",
               "Over500_2026_P04_-_published.xlsx:905",
               "Over500_2026_P04_-_published.xlsx:906"
-            ]
+            ],
+            "tiers_met_gbp": [
+              1000.0,
+              25000.0,
+              500000.0
+            ],
+            "match_class": "exact"
           },
           {
             "supplier_norm": "SLOUGH BOROUGH COUNCIL",
@@ -7045,7 +6660,13 @@
             ],
             "row_ids": [
               "Over500_2026_P02_-_published.xlsx:2198"
-            ]
+            ],
+            "tiers_met_gbp": [
+              1000.0,
+              25000.0,
+              500000.0
+            ],
+            "match_class": "none"
           },
           {
             "supplier_norm": "TWO SAINTS",
@@ -7076,7 +6697,13 @@
               "Over500_2026_P03_-_published.xlsx:3080",
               "Over500_2026_P04_-_published.xlsx:3181",
               "Over500_2026_P04_-_published.xlsx:3781"
-            ]
+            ],
+            "tiers_met_gbp": [
+              1000.0,
+              25000.0,
+              500000.0
+            ],
+            "match_class": "exact"
           },
           {
             "supplier_norm": "SIKANDAR HAYAT",
@@ -7141,7 +6768,13 @@
               "Over500_2026_P04_-_published.xlsx:463",
               "Over500_2026_P04_-_published.xlsx:466",
               "Over500_2026_P04_-_published.xlsx:481"
-            ]
+            ],
+            "tiers_met_gbp": [
+              1000.0,
+              25000.0,
+              500000.0
+            ],
+            "match_class": "none"
           },
           {
             "supplier_norm": "ANDY AND ES",
@@ -7168,7 +6801,13 @@
               "Over500_2026_P02_-_published.xlsx:670",
               "Over500_2026_P03_-_published.xlsx:661",
               "Over500_2026_P04_-_published.xlsx:1283"
-            ]
+            ],
+            "tiers_met_gbp": [
+              1000.0,
+              25000.0,
+              500000.0
+            ],
+            "match_class": "none"
           },
           {
             "supplier_norm": "WEAVAWAY TRAVEL",
@@ -7237,7 +6876,13 @@
               "Over500_2026_P04_-_published.xlsx:456",
               "Over500_2026_P04_-_published.xlsx:459",
               "Over500_2026_P04_-_published.xlsx:460"
-            ]
+            ],
+            "tiers_met_gbp": [
+              1000.0,
+              25000.0,
+              500000.0
+            ],
+            "match_class": "exact"
           },
           {
             "supplier_norm": "FD TRAVELS",
@@ -7331,7 +6976,13 @@
               "Over500_2026_P04_-_published.xlsx:467",
               "Over500_2026_P04_-_published.xlsx:475",
               "Over500_2026_P04_-_published.xlsx:476"
-            ]
+            ],
+            "tiers_met_gbp": [
+              1000.0,
+              25000.0,
+              500000.0
+            ],
+            "match_class": "exact"
           },
           {
             "supplier_norm": "ELIOR",
@@ -7364,7 +7015,13 @@
               "Over500_2026_P04_-_published.xlsx:532",
               "Over500_2026_P04_-_published.xlsx:533",
               "Over500_2026_P04_-_published.xlsx:983"
-            ]
+            ],
+            "tiers_met_gbp": [
+              1000.0,
+              25000.0,
+              500000.0
+            ],
+            "match_class": "none"
           },
           {
             "supplier_norm": "BBOWT",
@@ -7392,7 +7049,13 @@
               "Over500_2026_P02_-_published.xlsx:641",
               "Over500_2026_P04_-_published.xlsx:589",
               "Over500_2026_P04_-_published.xlsx:623"
-            ]
+            ],
+            "tiers_met_gbp": [
+              1000.0,
+              25000.0,
+              500000.0
+            ],
+            "match_class": "none"
           },
           {
             "supplier_norm": "BROADWAY CARS",
@@ -7462,7 +7125,13 @@
               "Over500_2026_P04_-_published.xlsx:471",
               "Over500_2026_P04_-_published.xlsx:472",
               "Over500_2026_P04_-_published.xlsx:474"
-            ]
+            ],
+            "tiers_met_gbp": [
+              1000.0,
+              25000.0,
+              500000.0
+            ],
+            "match_class": "exact"
           },
           {
             "supplier_norm": "BRACKNELL FOREST BOROUGH CNCL",
@@ -7487,991 +7156,205 @@
             ],
             "row_ids": [
               "Over500_2026_P03_-_published.xlsx:2217"
-            ]
+            ],
+            "tiers_met_gbp": [
+              1000.0,
+              25000.0,
+              500000.0
+            ],
+            "match_class": "none"
           }
         ]
       },
       "by_tag": {
         "general_procurement": {
-          "rows": 508,
-          "amount_pence": 2828949448,
-          "gbp": 28289494.48,
-          "suppliers": 508
+          "suppliers": 509,
+          "gbp": 28290148.48,
+          "annualised_estimate_gbp": 113160593.92,
+          "multi_tag_suppliers": 9
         },
         "care_or_education_placement": {
-          "rows": 353,
-          "amount_pence": 3055986446,
+          "suppliers": 353,
           "gbp": 30559864.46,
-          "suppliers": 353
+          "annualised_estimate_gbp": 122239457.84,
+          "multi_tag_suppliers": 8
         },
         "grant": {
-          "rows": 189,
-          "amount_pence": 607571865,
+          "suppliers": 189,
           "gbp": 6075718.65,
-          "suppliers": 189
+          "annualised_estimate_gbp": 24302874.6,
+          "multi_tag_suppliers": 6
         },
         "agency_staff": {
-          "rows": 6,
-          "amount_pence": 128500124,
+          "suppliers": 6,
           "gbp": 1285001.24,
-          "suppliers": 6
+          "annualised_estimate_gbp": 5140004.96,
+          "multi_tag_suppliers": 0
         },
         "premises_non_procurement": {
-          "rows": 27,
-          "amount_pence": 56802595,
-          "gbp": 568025.95,
-          "suppliers": 27
+          "suppliers": 26,
+          "gbp": 567371.95,
+          "annualised_estimate_gbp": 2269487.8,
+          "multi_tag_suppliers": 4
         }
       },
+      "tiers": [
+        {
+          "threshold": 1000.0,
+          "inclusive": false,
+          "rule_ids": [
+            "CPR-68"
+          ],
+          "count": 1083,
+          "gbp": 66778104.78,
+          "annualised_estimate_gbp": 267112419.12,
+          "by_tag": {
+            "general_procurement": {
+              "suppliers": 509,
+              "gbp": 28290148.48,
+              "annualised_estimate_gbp": 113160593.92,
+              "multi_tag_suppliers": 9
+            },
+            "care_or_education_placement": {
+              "suppliers": 353,
+              "gbp": 30559864.46,
+              "annualised_estimate_gbp": 122239457.84,
+              "multi_tag_suppliers": 8
+            },
+            "grant": {
+              "suppliers": 189,
+              "gbp": 6075718.65,
+              "annualised_estimate_gbp": 24302874.6,
+              "multi_tag_suppliers": 6
+            },
+            "agency_staff": {
+              "suppliers": 6,
+              "gbp": 1285001.24,
+              "annualised_estimate_gbp": 5140004.96,
+              "multi_tag_suppliers": 0
+            },
+            "premises_non_procurement": {
+              "suppliers": 26,
+              "gbp": 567371.95,
+              "annualised_estimate_gbp": 2269487.8,
+              "multi_tag_suppliers": 4
+            }
+          },
+          "headline": {
+            "count": 509,
+            "gbp": 28290148.48,
+            "annualised_estimate_gbp": 113160593.92
+          },
+          "filter": "high-value-suppliers.csv rows whose tiers_met_gbp includes 1000.0"
+        },
+        {
+          "threshold": 25000.0,
+          "inclusive": true,
+          "rule_ids": [
+            "CPR-20",
+            "CPR-68",
+            "CPR-69",
+            "CPR-71"
+          ],
+          "count": 674,
+          "gbp": 65745526.89,
+          "annualised_estimate_gbp": 262982107.56,
+          "by_tag": {
+            "general_procurement": {
+              "suppliers": 228,
+              "gbp": 27646080.16,
+              "annualised_estimate_gbp": 110584320.64,
+              "multi_tag_suppliers": 8
+            },
+            "care_or_education_placement": {
+              "suppliers": 307,
+              "gbp": 30424868.32,
+              "annualised_estimate_gbp": 121699473.28,
+              "multi_tag_suppliers": 8
+            },
+            "grant": {
+              "suppliers": 123,
+              "gbp": 5868739.51,
+              "annualised_estimate_gbp": 23474958.04,
+              "multi_tag_suppliers": 6
+            },
+            "agency_staff": {
+              "suppliers": 1,
+              "gbp": 1275552.15,
+              "annualised_estimate_gbp": 5102208.6,
+              "multi_tag_suppliers": 0
+            },
+            "premises_non_procurement": {
+              "suppliers": 15,
+              "gbp": 530286.75,
+              "annualised_estimate_gbp": 2121147.0,
+              "multi_tag_suppliers": 4
+            }
+          },
+          "headline": {
+            "count": 228,
+            "gbp": 27646080.16,
+            "annualised_estimate_gbp": 110584320.64
+          },
+          "filter": "high-value-suppliers.csv rows whose tiers_met_gbp includes 25000.0"
+        },
+        {
+          "threshold": 500000.0,
+          "inclusive": false,
+          "rule_ids": [
+            "CPR-04",
+            "CPR-23",
+            "CPR-24",
+            "CPR-52",
+            "CPR-65",
+            "CPR-66",
+            "CPR-71",
+            "CPR-73"
+          ],
+          "count": 108,
+          "gbp": 48692430.49,
+          "annualised_estimate_gbp": 194769721.96,
+          "by_tag": {
+            "general_procurement": {
+              "suppliers": 21,
+              "gbp": 21964666.54,
+              "annualised_estimate_gbp": 87858666.16,
+              "multi_tag_suppliers": 0
+            },
+            "care_or_education_placement": {
+              "suppliers": 68,
+              "gbp": 21812079.26,
+              "annualised_estimate_gbp": 87248317.04,
+              "multi_tag_suppliers": 3
+            },
+            "grant": {
+              "suppliers": 17,
+              "gbp": 3503520.48,
+              "annualised_estimate_gbp": 14014081.92,
+              "multi_tag_suppliers": 2
+            },
+            "agency_staff": {
+              "suppliers": 1,
+              "gbp": 1275552.15,
+              "annualised_estimate_gbp": 5102208.6,
+              "multi_tag_suppliers": 0
+            },
+            "premises_non_procurement": {
+              "suppliers": 1,
+              "gbp": 136612.06,
+              "annualised_estimate_gbp": 546448.24,
+              "multi_tag_suppliers": 1
+            }
+          },
+          "headline": {
+            "count": 21,
+            "gbp": 21964666.54,
+            "annualised_estimate_gbp": 87858666.16
+          },
+          "filter": "high-value-suppliers.csv rows whose tiers_met_gbp includes 500000.0"
+        }
+      ],
       "tag_tables": {
-        "general_procurement": [
-          {
-            "supplier_norm": "VOLKERHIGHWAYS",
-            "supplier": "VolkerHighways Ltd",
-            "company_number": "",
-            "amount_pence": 737792221,
-            "total_gbp": 7377922.21,
-            "annualised_estimate_pence": 2951168884,
-            "annualised_estimate_gbp": 29511688.84,
-            "estimate_label": "annualised estimate",
-            "dominant_tag": "general_procurement",
-            "multi_tag": false,
-            "tag_totals_gbp": {
-              "general_procurement": 7377922.21
-            },
-            "n_payments": 126,
-            "narratives": [
-              "Payment to contractor",
-              "Private Contractors",
-              "Projects or Minor Works"
-            ],
-            "services": [
-              "Environment"
-            ],
-            "row_ids": [
-              "Over500_2026_P02_-_published.xlsx:2170",
-              "Over500_2026_P02_-_published.xlsx:2172",
-              "Over500_2026_P02_-_published.xlsx:2173",
-              "Over500_2026_P02_-_published.xlsx:2174",
-              "Over500_2026_P02_-_published.xlsx:2175",
-              "Over500_2026_P02_-_published.xlsx:2176",
-              "Over500_2026_P02_-_published.xlsx:2177",
-              "Over500_2026_P02_-_published.xlsx:2178",
-              "Over500_2026_P02_-_published.xlsx:2179",
-              "Over500_2026_P02_-_published.xlsx:2180",
-              "Over500_2026_P02_-_published.xlsx:2181",
-              "Over500_2026_P02_-_published.xlsx:2182",
-              "Over500_2026_P02_-_published.xlsx:2183",
-              "Over500_2026_P02_-_published.xlsx:2184",
-              "Over500_2026_P02_-_published.xlsx:2185",
-              "Over500_2026_P02_-_published.xlsx:2193",
-              "Over500_2026_P02_-_published.xlsx:691",
-              "Over500_2026_P02_-_published.xlsx:692",
-              "Over500_2026_P02_-_published.xlsx:693",
-              "Over500_2026_P02_-_published.xlsx:694",
-              "Over500_2026_P02_-_published.xlsx:695",
-              "Over500_2026_P02_-_published.xlsx:696",
-              "Over500_2026_P02_-_published.xlsx:697",
-              "Over500_2026_P02_-_published.xlsx:698",
-              "Over500_2026_P02_-_published.xlsx:699",
-              "Over500_2026_P02_-_published.xlsx:700",
-              "Over500_2026_P02_-_published.xlsx:701",
-              "Over500_2026_P02_-_published.xlsx:702",
-              "Over500_2026_P02_-_published.xlsx:703",
-              "Over500_2026_P02_-_published.xlsx:704",
-              "Over500_2026_P02_-_published.xlsx:705",
-              "Over500_2026_P02_-_published.xlsx:706",
-              "Over500_2026_P02_-_published.xlsx:707",
-              "Over500_2026_P02_-_published.xlsx:709",
-              "Over500_2026_P02_-_published.xlsx:710",
-              "Over500_2026_P02_-_published.xlsx:711",
-              "Over500_2026_P02_-_published.xlsx:712",
-              "Over500_2026_P02_-_published.xlsx:713",
-              "Over500_2026_P02_-_published.xlsx:714",
-              "Over500_2026_P02_-_published.xlsx:715",
-              "Over500_2026_P02_-_published.xlsx:716",
-              "Over500_2026_P02_-_published.xlsx:717",
-              "Over500_2026_P02_-_published.xlsx:720",
-              "Over500_2026_P02_-_published.xlsx:721",
-              "Over500_2026_P02_-_published.xlsx:722",
-              "Over500_2026_P02_-_published.xlsx:723",
-              "Over500_2026_P02_-_published.xlsx:724",
-              "Over500_2026_P02_-_published.xlsx:725",
-              "Over500_2026_P02_-_published.xlsx:726",
-              "Over500_2026_P02_-_published.xlsx:727",
-              "Over500_2026_P02_-_published.xlsx:728",
-              "Over500_2026_P02_-_published.xlsx:729",
-              "Over500_2026_P02_-_published.xlsx:730",
-              "Over500_2026_P02_-_published.xlsx:731",
-              "Over500_2026_P02_-_published.xlsx:734",
-              "Over500_2026_P03_-_published.xlsx:2117",
-              "Over500_2026_P03_-_published.xlsx:2133",
-              "Over500_2026_P03_-_published.xlsx:2401",
-              "Over500_2026_P03_-_published.xlsx:2402",
-              "Over500_2026_P03_-_published.xlsx:2403",
-              "Over500_2026_P03_-_published.xlsx:683",
-              "Over500_2026_P03_-_published.xlsx:684",
-              "Over500_2026_P03_-_published.xlsx:699",
-              "Over500_2026_P03_-_published.xlsx:700",
-              "Over500_2026_P03_-_published.xlsx:701",
-              "Over500_2026_P03_-_published.xlsx:702",
-              "Over500_2026_P03_-_published.xlsx:703",
-              "Over500_2026_P03_-_published.xlsx:727",
-              "Over500_2026_P03_-_published.xlsx:728",
-              "Over500_2026_P03_-_published.xlsx:729",
-              "Over500_2026_P04_-_published.xlsx:1289",
-              "Over500_2026_P04_-_published.xlsx:1291",
-              "Over500_2026_P04_-_published.xlsx:1292",
-              "Over500_2026_P04_-_published.xlsx:1293",
-              "Over500_2026_P04_-_published.xlsx:1295",
-              "Over500_2026_P04_-_published.xlsx:1296",
-              "Over500_2026_P04_-_published.xlsx:1310",
-              "Over500_2026_P04_-_published.xlsx:3184",
-              "Over500_2026_P04_-_published.xlsx:3185",
-              "Over500_2026_P04_-_published.xlsx:3186",
-              "Over500_2026_P04_-_published.xlsx:3187",
-              "Over500_2026_P04_-_published.xlsx:3188",
-              "Over500_2026_P04_-_published.xlsx:3192",
-              "Over500_2026_P04_-_published.xlsx:3210",
-              "Over500_2026_P04_-_published.xlsx:3211",
-              "Over500_2026_P04_-_published.xlsx:3212",
-              "Over500_2026_P04_-_published.xlsx:3213",
-              "Over500_2026_P04_-_published.xlsx:3302",
-              "Over500_2026_P04_-_published.xlsx:3303",
-              "Over500_2026_P04_-_published.xlsx:3304",
-              "Over500_2026_P04_-_published.xlsx:3305",
-              "Over500_2026_P04_-_published.xlsx:3306",
-              "Over500_2026_P04_-_published.xlsx:3307",
-              "Over500_2026_P04_-_published.xlsx:3308",
-              "Over500_2026_P04_-_published.xlsx:3309",
-              "Over500_2026_P04_-_published.xlsx:3784",
-              "Over500_2026_P04_-_published.xlsx:3785",
-              "Over500_2026_P04_-_published.xlsx:3786",
-              "Over500_2026_P04_-_published.xlsx:3787",
-              "Over500_2026_P04_-_published.xlsx:599",
-              "Over500_2026_P04_-_published.xlsx:600",
-              "Over500_2026_P04_-_published.xlsx:602",
-              "Over500_2026_P04_-_published.xlsx:603",
-              "Over500_2026_P04_-_published.xlsx:618",
-              "Over500_2026_P04_-_published.xlsx:619",
-              "Over500_2026_P04_-_published.xlsx:620",
-              "Over500_2026_P04_-_published.xlsx:621",
-              "Over500_2026_P04_-_published.xlsx:736",
-              "Over500_2026_P04_-_published.xlsx:737",
-              "Over500_2026_P04_-_published.xlsx:739",
-              "Over500_2026_P04_-_published.xlsx:742",
-              "Over500_2026_P04_-_published.xlsx:777",
-              "Over500_2026_P04_-_published.xlsx:778",
-              "Over500_2026_P04_-_published.xlsx:790",
-              "Over500_2026_P04_-_published.xlsx:791",
-              "Over500_2026_P04_-_published.xlsx:792",
-              "Over500_2026_P04_-_published.xlsx:793",
-              "Over500_2026_P04_-_published.xlsx:794",
-              "Over500_2026_P04_-_published.xlsx:795",
-              "Over500_2026_P04_-_published.xlsx:796",
-              "Over500_2026_P04_-_published.xlsx:798",
-              "Over500_2026_P04_-_published.xlsx:799",
-              "Over500_2026_P04_-_published.xlsx:819",
-              "Over500_2026_P04_-_published.xlsx:821",
-              "Over500_2026_P04_-_published.xlsx:822",
-              "Over500_2026_P04_-_published.xlsx:828"
-            ]
-          },
-          {
-            "supplier_norm": "VEOLIA ES WEST BERKSHIRE",
-            "supplier": "VEOLIA ES WEST BERKSHIRE LTD (CHAPS ONLY)",
-            "company_number": "",
-            "amount_pence": 618606504,
-            "total_gbp": 6186065.04,
-            "annualised_estimate_pence": 2474426016,
-            "annualised_estimate_gbp": 24744260.16,
-            "estimate_label": "annualised estimate",
-            "dominant_tag": "general_procurement",
-            "multi_tag": false,
-            "tag_totals_gbp": {
-              "general_procurement": 6186065.04
-            },
-            "n_payments": 3,
-            "narratives": [
-              "Private Contractors"
-            ],
-            "services": [
-              "Environment"
-            ],
-            "row_ids": [
-              "Over500_2026_P02_-_published.xlsx:2196",
-              "Over500_2026_P03_-_published.xlsx:2146",
-              "Over500_2026_P04_-_published.xlsx:3194"
-            ]
-          },
-          {
-            "supplier_norm": "MILLBROOK HEALTHCARE",
-            "supplier": "Millbrook Healthcare Limited",
-            "company_number": "",
-            "amount_pence": 345936535,
-            "total_gbp": 3459365.35,
-            "annualised_estimate_pence": 1383746140,
-            "annualised_estimate_gbp": 13837461.4,
-            "estimate_label": "annualised estimate",
-            "dominant_tag": "general_procurement",
-            "multi_tag": false,
-            "tag_totals_gbp": {
-              "general_procurement": 3459365.35
-            },
-            "n_payments": 4,
-            "narratives": [
-              "Private Contractors"
-            ],
-            "services": [
-              "Finance, Property & Procurement"
-            ],
-            "row_ids": [
-              "Over500_2026_P03_-_published.xlsx:2144",
-              "Over500_2026_P03_-_published.xlsx:2216",
-              "Over500_2026_P04_-_published.xlsx:3311",
-              "Over500_2026_P04_-_published.xlsx:3789"
-            ]
-          },
-          {
-            "supplier_norm": "BETTER GROUP",
-            "supplier": "The Better Group Ltd",
-            "company_number": "",
-            "amount_pence": 58849008,
-            "total_gbp": 588490.08,
-            "annualised_estimate_pence": 235396032,
-            "annualised_estimate_gbp": 2353960.32,
-            "estimate_label": "annualised estimate",
-            "dominant_tag": "general_procurement",
-            "multi_tag": false,
-            "tag_totals_gbp": {
-              "general_procurement": 588490.08
-            },
-            "n_payments": 26,
-            "narratives": [
-              "IT",
-              "Payment to contractor",
-              "Training"
-            ],
-            "services": [
-              "Adult Social Care",
-              "Adult Social Care - Transformation Projects",
-              "Children's Social Care",
-              "Education & SEND"
-            ],
-            "row_ids": [
-              "Over500_2026_P02_-_published.xlsx:10",
-              "Over500_2026_P02_-_published.xlsx:11",
-              "Over500_2026_P02_-_published.xlsx:665",
-              "Over500_2026_P02_-_published.xlsx:666",
-              "Over500_2026_P02_-_published.xlsx:667",
-              "Over500_2026_P02_-_published.xlsx:9",
-              "Over500_2026_P03_-_published.xlsx:13",
-              "Over500_2026_P03_-_published.xlsx:15",
-              "Over500_2026_P03_-_published.xlsx:16",
-              "Over500_2026_P03_-_published.xlsx:18",
-              "Over500_2026_P03_-_published.xlsx:19",
-              "Over500_2026_P03_-_published.xlsx:20",
-              "Over500_2026_P03_-_published.xlsx:2396",
-              "Over500_2026_P03_-_published.xlsx:2397",
-              "Over500_2026_P03_-_published.xlsx:26",
-              "Over500_2026_P03_-_published.xlsx:27",
-              "Over500_2026_P03_-_published.xlsx:379",
-              "Over500_2026_P03_-_published.xlsx:394",
-              "Over500_2026_P03_-_published.xlsx:395",
-              "Over500_2026_P03_-_published.xlsx:670",
-              "Over500_2026_P04_-_published.xlsx:1281",
-              "Over500_2026_P04_-_published.xlsx:490",
-              "Over500_2026_P04_-_published.xlsx:495",
-              "Over500_2026_P04_-_published.xlsx:783",
-              "Over500_2026_P04_-_published.xlsx:911",
-              "Over500_2026_P04_-_published.xlsx:912"
-            ]
-          },
-          {
-            "supplier_norm": "SOFTWAREONE",
-            "supplier": "SoftwareONE UK Ltd",
-            "company_number": "",
-            "amount_pence": 52297862,
-            "total_gbp": 522978.62,
-            "annualised_estimate_pence": 209191448,
-            "annualised_estimate_gbp": 2091914.48,
-            "estimate_label": "annualised estimate",
-            "dominant_tag": "general_procurement",
-            "multi_tag": false,
-            "tag_totals_gbp": {
-              "general_procurement": 522978.62
-            },
-            "n_payments": 4,
-            "narratives": [
-              "IT",
-              "Subscriptions"
-            ],
-            "services": [
-              "Transformation, Customer & ICT"
-            ],
-            "row_ids": [
-              "Over500_2026_P02_-_published.xlsx:473",
-              "Over500_2026_P02_-_published.xlsx:474",
-              "Over500_2026_P02_-_published.xlsx:653",
-              "Over500_2026_P02_-_published.xlsx:654"
-            ]
-          },
-          {
-            "supplier_norm": "LIVITY LIFE",
-            "supplier": "Livity Life Ltd",
-            "company_number": "",
-            "amount_pence": 51307485,
-            "total_gbp": 513074.85,
-            "annualised_estimate_pence": 205229940,
-            "annualised_estimate_gbp": 2052299.4,
-            "estimate_label": "annualised estimate",
-            "dominant_tag": "general_procurement",
-            "multi_tag": false,
-            "tag_totals_gbp": {
-              "general_procurement": 513074.85
-            },
-            "n_payments": 9,
-            "narratives": [
-              "Private Contractors"
-            ],
-            "services": [
-              "Finance, Property & Procurement"
-            ],
-            "row_ids": [
-              "Over500_2026_P02_-_published.xlsx:2199",
-              "Over500_2026_P02_-_published.xlsx:2200",
-              "Over500_2026_P03_-_published.xlsx:2218",
-              "Over500_2026_P03_-_published.xlsx:3087",
-              "Over500_2026_P03_-_published.xlsx:3088",
-              "Over500_2026_P04_-_published.xlsx:3196",
-              "Over500_2026_P04_-_published.xlsx:3197",
-              "Over500_2026_P04_-_published.xlsx:3215",
-              "Over500_2026_P04_-_published.xlsx:3310"
-            ]
-          },
-          {
-            "supplier_norm": "NEWBURY AND DISTRICT",
-            "supplier": "Newbury & District Ltd",
-            "company_number": "",
-            "amount_pence": 38877988,
-            "total_gbp": 388779.88,
-            "annualised_estimate_pence": 155511952,
-            "annualised_estimate_gbp": 1555119.52,
-            "estimate_label": "annualised estimate",
-            "dominant_tag": "general_procurement",
-            "multi_tag": false,
-            "tag_totals_gbp": {
-              "general_procurement": 388779.88
-            },
-            "n_payments": 23,
-            "narratives": [
-              "Public Transport",
-              "Transport Hire"
-            ],
-            "services": [
-              "Education & SEND",
-              "Environment"
-            ],
-            "row_ids": [
-              "Over500_2026_P02_-_published.xlsx:434",
-              "Over500_2026_P02_-_published.xlsx:437",
-              "Over500_2026_P02_-_published.xlsx:440",
-              "Over500_2026_P03_-_published.xlsx:171",
-              "Over500_2026_P03_-_published.xlsx:176",
-              "Over500_2026_P03_-_published.xlsx:213",
-              "Over500_2026_P03_-_published.xlsx:251",
-              "Over500_2026_P03_-_published.xlsx:264",
-              "Over500_2026_P03_-_published.xlsx:267",
-              "Over500_2026_P03_-_published.xlsx:268",
-              "Over500_2026_P03_-_published.xlsx:269",
-              "Over500_2026_P03_-_published.xlsx:270",
-              "Over500_2026_P03_-_published.xlsx:274",
-              "Over500_2026_P03_-_published.xlsx:336",
-              "Over500_2026_P03_-_published.xlsx:341",
-              "Over500_2026_P03_-_published.xlsx:357",
-              "Over500_2026_P03_-_published.xlsx:359",
-              "Over500_2026_P03_-_published.xlsx:360",
-              "Over500_2026_P04_-_published.xlsx:194",
-              "Over500_2026_P04_-_published.xlsx:251",
-              "Over500_2026_P04_-_published.xlsx:358",
-              "Over500_2026_P04_-_published.xlsx:361",
-              "Over500_2026_P04_-_published.xlsx:363"
-            ]
-          },
-          {
-            "supplier_norm": "E W BEARD",
-            "supplier": "E W BEARD LTD",
-            "company_number": "",
-            "amount_pence": 38265270,
-            "total_gbp": 382652.7,
-            "annualised_estimate_pence": 153061080,
-            "annualised_estimate_gbp": 1530610.8,
-            "estimate_label": "annualised estimate",
-            "dominant_tag": "general_procurement",
-            "multi_tag": false,
-            "tag_totals_gbp": {
-              "general_procurement": 382652.7
-            },
-            "n_payments": 20,
-            "narratives": [
-              "Corporate R&M",
-              "Payment to contractor"
-            ],
-            "services": [
-              "Community Services",
-              "Development & Housing",
-              "Education & SEND"
-            ],
-            "row_ids": [
-              "Over500_2026_P02_-_published.xlsx:43",
-              "Over500_2026_P02_-_published.xlsx:47",
-              "Over500_2026_P02_-_published.xlsx:671",
-              "Over500_2026_P02_-_published.xlsx:672",
-              "Over500_2026_P02_-_published.xlsx:673",
-              "Over500_2026_P02_-_published.xlsx:674",
-              "Over500_2026_P02_-_published.xlsx:675",
-              "Over500_2026_P03_-_published.xlsx:2399",
-              "Over500_2026_P03_-_published.xlsx:664",
-              "Over500_2026_P03_-_published.xlsx:665",
-              "Over500_2026_P03_-_published.xlsx:671",
-              "Over500_2026_P04_-_published.xlsx:1284",
-              "Over500_2026_P04_-_published.xlsx:42",
-              "Over500_2026_P04_-_published.xlsx:53",
-              "Over500_2026_P04_-_published.xlsx:594",
-              "Over500_2026_P04_-_published.xlsx:595",
-              "Over500_2026_P04_-_published.xlsx:729",
-              "Over500_2026_P04_-_published.xlsx:730",
-              "Over500_2026_P04_-_published.xlsx:784",
-              "Over500_2026_P04_-_published.xlsx:79"
-            ]
-          },
-          {
-            "supplier_norm": "ASCIA CONSTRUCTION",
-            "supplier": "ASCIA CONSTRUCTION LIMITED",
-            "company_number": "",
-            "amount_pence": 33257929,
-            "total_gbp": 332579.29,
-            "annualised_estimate_pence": 133031716,
-            "annualised_estimate_gbp": 1330317.16,
-            "estimate_label": "annualised estimate",
-            "dominant_tag": "general_procurement",
-            "multi_tag": false,
-            "tag_totals_gbp": {
-              "general_procurement": 332579.29
-            },
-            "n_payments": 1,
-            "narratives": [
-              "Payment to contractor"
-            ],
-            "services": [
-              "Education & SEND"
-            ],
-            "row_ids": [
-              "Over500_2026_P02_-_published.xlsx:669"
-            ]
-          },
-          {
-            "supplier_norm": "NEC SOFTWARE SOLUTIONS",
-            "supplier": "NEC SOFTWARE SOLUTIONS UK LIMITED",
-            "company_number": "",
-            "amount_pence": 31438357,
-            "total_gbp": 314383.57,
-            "annualised_estimate_pence": 125753428,
-            "annualised_estimate_gbp": 1257534.28,
-            "estimate_label": "annualised estimate",
-            "dominant_tag": "general_procurement",
-            "multi_tag": false,
-            "tag_totals_gbp": {
-              "general_procurement": 314383.57
-            },
-            "n_payments": 10,
-            "narratives": [
-              "IT"
-            ],
-            "services": [
-              "Finance, Property & Procurement"
-            ],
-            "row_ids": [
-              "Over500_2026_P04_-_published.xlsx:427",
-              "Over500_2026_P04_-_published.xlsx:487",
-              "Over500_2026_P04_-_published.xlsx:488",
-              "Over500_2026_P04_-_published.xlsx:489",
-              "Over500_2026_P04_-_published.xlsx:492",
-              "Over500_2026_P04_-_published.xlsx:493",
-              "Over500_2026_P04_-_published.xlsx:494",
-              "Over500_2026_P04_-_published.xlsx:904",
-              "Over500_2026_P04_-_published.xlsx:905",
-              "Over500_2026_P04_-_published.xlsx:906"
-            ]
-          },
-          {
-            "supplier_norm": "SLOUGH BOROUGH COUNCIL",
-            "supplier": "SLOUGH BOROUGH COUNCIL",
-            "company_number": "",
-            "amount_pence": 29617715,
-            "total_gbp": 296177.15,
-            "annualised_estimate_pence": 118470860,
-            "annualised_estimate_gbp": 1184708.6,
-            "estimate_label": "annualised estimate",
-            "dominant_tag": "general_procurement",
-            "multi_tag": false,
-            "tag_totals_gbp": {
-              "general_procurement": 296177.15
-            },
-            "n_payments": 1,
-            "narratives": [
-              "Private Contractors"
-            ],
-            "services": [
-              "Finance, Property & Procurement"
-            ],
-            "row_ids": [
-              "Over500_2026_P02_-_published.xlsx:2198"
-            ]
-          },
-          {
-            "supplier_norm": "TWO SAINTS",
-            "supplier": "TWO SAINTS LTD",
-            "company_number": "",
-            "amount_pence": 21328845,
-            "total_gbp": 213288.45,
-            "annualised_estimate_pence": 85315380,
-            "annualised_estimate_gbp": 853153.8,
-            "estimate_label": "annualised estimate",
-            "dominant_tag": "general_procurement",
-            "multi_tag": false,
-            "tag_totals_gbp": {
-              "general_procurement": 213288.45
-            },
-            "n_payments": 7,
-            "narratives": [
-              "Private Contractors"
-            ],
-            "services": [
-              "Development & Housing"
-            ],
-            "row_ids": [
-              "Over500_2026_P02_-_published.xlsx:2160",
-              "Over500_2026_P02_-_published.xlsx:2161",
-              "Over500_2026_P02_-_published.xlsx:2162",
-              "Over500_2026_P03_-_published.xlsx:2130",
-              "Over500_2026_P03_-_published.xlsx:3080",
-              "Over500_2026_P04_-_published.xlsx:3181",
-              "Over500_2026_P04_-_published.xlsx:3781"
-            ]
-          },
-          {
-            "supplier_norm": "SIKANDAR HAYAT",
-            "supplier": "Sikandar Hayat t/a Prompt Cars",
-            "company_number": "",
-            "amount_pence": 18725050,
-            "total_gbp": 187250.5,
-            "annualised_estimate_pence": 74900200,
-            "annualised_estimate_gbp": 749002.0,
-            "estimate_label": "annualised estimate",
-            "dominant_tag": "general_procurement",
-            "multi_tag": false,
-            "tag_totals_gbp": {
-              "general_procurement": 187250.5
-            },
-            "n_payments": 40,
-            "narratives": [
-              "Transport Hire"
-            ],
-            "services": [
-              "Children's Social Care",
-              "Education & SEND"
-            ],
-            "row_ids": [
-              "Over500_2026_P02_-_published.xlsx:222",
-              "Over500_2026_P02_-_published.xlsx:223",
-              "Over500_2026_P02_-_published.xlsx:224",
-              "Over500_2026_P02_-_published.xlsx:235",
-              "Over500_2026_P02_-_published.xlsx:236",
-              "Over500_2026_P02_-_published.xlsx:269",
-              "Over500_2026_P02_-_published.xlsx:311",
-              "Over500_2026_P02_-_published.xlsx:356",
-              "Over500_2026_P02_-_published.xlsx:398",
-              "Over500_2026_P03_-_published.xlsx:157",
-              "Over500_2026_P03_-_published.xlsx:162",
-              "Over500_2026_P03_-_published.xlsx:183",
-              "Over500_2026_P03_-_published.xlsx:203",
-              "Over500_2026_P03_-_published.xlsx:208",
-              "Over500_2026_P03_-_published.xlsx:209",
-              "Over500_2026_P03_-_published.xlsx:239",
-              "Over500_2026_P03_-_published.xlsx:254",
-              "Over500_2026_P03_-_published.xlsx:261",
-              "Over500_2026_P03_-_published.xlsx:325",
-              "Over500_2026_P03_-_published.xlsx:345",
-              "Over500_2026_P04_-_published.xlsx:159",
-              "Over500_2026_P04_-_published.xlsx:189",
-              "Over500_2026_P04_-_published.xlsx:206",
-              "Over500_2026_P04_-_published.xlsx:220",
-              "Over500_2026_P04_-_published.xlsx:221",
-              "Over500_2026_P04_-_published.xlsx:222",
-              "Over500_2026_P04_-_published.xlsx:226",
-              "Over500_2026_P04_-_published.xlsx:271",
-              "Over500_2026_P04_-_published.xlsx:272",
-              "Over500_2026_P04_-_published.xlsx:273",
-              "Over500_2026_P04_-_published.xlsx:274",
-              "Over500_2026_P04_-_published.xlsx:276",
-              "Over500_2026_P04_-_published.xlsx:292",
-              "Over500_2026_P04_-_published.xlsx:324",
-              "Over500_2026_P04_-_published.xlsx:433",
-              "Over500_2026_P04_-_published.xlsx:435",
-              "Over500_2026_P04_-_published.xlsx:455",
-              "Over500_2026_P04_-_published.xlsx:463",
-              "Over500_2026_P04_-_published.xlsx:466",
-              "Over500_2026_P04_-_published.xlsx:481"
-            ]
-          },
-          {
-            "supplier_norm": "ANDY AND ES",
-            "supplier": "ANDY AND ES LIMITED",
-            "company_number": "",
-            "amount_pence": 17115885,
-            "total_gbp": 171158.85,
-            "annualised_estimate_pence": 68463540,
-            "annualised_estimate_gbp": 684635.4,
-            "estimate_label": "annualised estimate",
-            "dominant_tag": "general_procurement",
-            "multi_tag": false,
-            "tag_totals_gbp": {
-              "general_procurement": 171158.85
-            },
-            "n_payments": 3,
-            "narratives": [
-              "Payment to contractor"
-            ],
-            "services": [
-              "Education & SEND"
-            ],
-            "row_ids": [
-              "Over500_2026_P02_-_published.xlsx:670",
-              "Over500_2026_P03_-_published.xlsx:661",
-              "Over500_2026_P04_-_published.xlsx:1283"
-            ]
-          },
-          {
-            "supplier_norm": "WEAVAWAY TRAVEL",
-            "supplier": "WEAVAWAY TRAVEL LTD",
-            "company_number": "",
-            "amount_pence": 16935160,
-            "total_gbp": 169351.6,
-            "annualised_estimate_pence": 67740640,
-            "annualised_estimate_gbp": 677406.4,
-            "estimate_label": "annualised estimate",
-            "dominant_tag": "general_procurement",
-            "multi_tag": false,
-            "tag_totals_gbp": {
-              "general_procurement": 169351.6
-            },
-            "n_payments": 45,
-            "narratives": [
-              "Transport Hire"
-            ],
-            "services": [
-              "Education & SEND"
-            ],
-            "row_ids": [
-              "Over500_2026_P02_-_published.xlsx:305",
-              "Over500_2026_P02_-_published.xlsx:306",
-              "Over500_2026_P02_-_published.xlsx:307",
-              "Over500_2026_P02_-_published.xlsx:308",
-              "Over500_2026_P02_-_published.xlsx:310",
-              "Over500_2026_P02_-_published.xlsx:331",
-              "Over500_2026_P02_-_published.xlsx:332",
-              "Over500_2026_P02_-_published.xlsx:333",
-              "Over500_2026_P02_-_published.xlsx:334",
-              "Over500_2026_P02_-_published.xlsx:335",
-              "Over500_2026_P03_-_published.xlsx:170",
-              "Over500_2026_P03_-_published.xlsx:177",
-              "Over500_2026_P03_-_published.xlsx:178",
-              "Over500_2026_P03_-_published.xlsx:206",
-              "Over500_2026_P03_-_published.xlsx:207",
-              "Over500_2026_P03_-_published.xlsx:214",
-              "Over500_2026_P03_-_published.xlsx:215",
-              "Over500_2026_P03_-_published.xlsx:245",
-              "Over500_2026_P03_-_published.xlsx:337",
-              "Over500_2026_P03_-_published.xlsx:340",
-              "Over500_2026_P04_-_published.xlsx:181",
-              "Over500_2026_P04_-_published.xlsx:183",
-              "Over500_2026_P04_-_published.xlsx:192",
-              "Over500_2026_P04_-_published.xlsx:195",
-              "Over500_2026_P04_-_published.xlsx:196",
-              "Over500_2026_P04_-_published.xlsx:197",
-              "Over500_2026_P04_-_published.xlsx:198",
-              "Over500_2026_P04_-_published.xlsx:245",
-              "Over500_2026_P04_-_published.xlsx:246",
-              "Over500_2026_P04_-_published.xlsx:249",
-              "Over500_2026_P04_-_published.xlsx:250",
-              "Over500_2026_P04_-_published.xlsx:253",
-              "Over500_2026_P04_-_published.xlsx:300",
-              "Over500_2026_P04_-_published.xlsx:301",
-              "Over500_2026_P04_-_published.xlsx:302",
-              "Over500_2026_P04_-_published.xlsx:305",
-              "Over500_2026_P04_-_published.xlsx:309",
-              "Over500_2026_P04_-_published.xlsx:310",
-              "Over500_2026_P04_-_published.xlsx:311",
-              "Over500_2026_P04_-_published.xlsx:450",
-              "Over500_2026_P04_-_published.xlsx:451",
-              "Over500_2026_P04_-_published.xlsx:452",
-              "Over500_2026_P04_-_published.xlsx:456",
-              "Over500_2026_P04_-_published.xlsx:459",
-              "Over500_2026_P04_-_published.xlsx:460"
-            ]
-          },
-          {
-            "supplier_norm": "FD TRAVELS",
-            "supplier": "FD TRAVELS LIMITED T/A SCHOOL EXPRESS",
-            "company_number": "",
-            "amount_pence": 16532447,
-            "total_gbp": 165324.47,
-            "annualised_estimate_pence": 66129788,
-            "annualised_estimate_gbp": 661297.88,
-            "estimate_label": "annualised estimate",
-            "dominant_tag": "general_procurement",
-            "multi_tag": false,
-            "tag_totals_gbp": {
-              "general_procurement": 165324.47
-            },
-            "n_payments": 70,
-            "narratives": [
-              "Transport Hire"
-            ],
-            "services": [
-              "Education & SEND"
-            ],
-            "row_ids": [
-              "Over500_2026_P02_-_published.xlsx:241",
-              "Over500_2026_P02_-_published.xlsx:242",
-              "Over500_2026_P02_-_published.xlsx:251",
-              "Over500_2026_P02_-_published.xlsx:265",
-              "Over500_2026_P02_-_published.xlsx:266",
-              "Over500_2026_P02_-_published.xlsx:283",
-              "Over500_2026_P02_-_published.xlsx:284",
-              "Over500_2026_P02_-_published.xlsx:289",
-              "Over500_2026_P02_-_published.xlsx:290",
-              "Over500_2026_P02_-_published.xlsx:294",
-              "Over500_2026_P02_-_published.xlsx:344",
-              "Over500_2026_P02_-_published.xlsx:345",
-              "Over500_2026_P02_-_published.xlsx:346",
-              "Over500_2026_P02_-_published.xlsx:347",
-              "Over500_2026_P02_-_published.xlsx:380",
-              "Over500_2026_P02_-_published.xlsx:381",
-              "Over500_2026_P02_-_published.xlsx:382",
-              "Over500_2026_P02_-_published.xlsx:383",
-              "Over500_2026_P02_-_published.xlsx:384",
-              "Over500_2026_P02_-_published.xlsx:385",
-              "Over500_2026_P02_-_published.xlsx:387",
-              "Over500_2026_P02_-_published.xlsx:388",
-              "Over500_2026_P02_-_published.xlsx:389",
-              "Over500_2026_P02_-_published.xlsx:390",
-              "Over500_2026_P02_-_published.xlsx:422",
-              "Over500_2026_P02_-_published.xlsx:423",
-              "Over500_2026_P02_-_published.xlsx:424",
-              "Over500_2026_P02_-_published.xlsx:425",
-              "Over500_2026_P02_-_published.xlsx:426",
-              "Over500_2026_P02_-_published.xlsx:427",
-              "Over500_2026_P02_-_published.xlsx:428",
-              "Over500_2026_P02_-_published.xlsx:429",
-              "Over500_2026_P02_-_published.xlsx:430",
-              "Over500_2026_P03_-_published.xlsx:164",
-              "Over500_2026_P03_-_published.xlsx:184",
-              "Over500_2026_P03_-_published.xlsx:228",
-              "Over500_2026_P03_-_published.xlsx:229",
-              "Over500_2026_P03_-_published.xlsx:255",
-              "Over500_2026_P03_-_published.xlsx:333",
-              "Over500_2026_P03_-_published.xlsx:346",
-              "Over500_2026_P04_-_published.xlsx:160",
-              "Over500_2026_P04_-_published.xlsx:175",
-              "Over500_2026_P04_-_published.xlsx:202",
-              "Over500_2026_P04_-_published.xlsx:203",
-              "Over500_2026_P04_-_published.xlsx:204",
-              "Over500_2026_P04_-_published.xlsx:223",
-              "Over500_2026_P04_-_published.xlsx:225",
-              "Over500_2026_P04_-_published.xlsx:233",
-              "Over500_2026_P04_-_published.xlsx:258",
-              "Over500_2026_P04_-_published.xlsx:261",
-              "Over500_2026_P04_-_published.xlsx:265",
-              "Over500_2026_P04_-_published.xlsx:266",
-              "Over500_2026_P04_-_published.xlsx:267",
-              "Over500_2026_P04_-_published.xlsx:268",
-              "Over500_2026_P04_-_published.xlsx:316",
-              "Over500_2026_P04_-_published.xlsx:319",
-              "Over500_2026_P04_-_published.xlsx:320",
-              "Over500_2026_P04_-_published.xlsx:321",
-              "Over500_2026_P04_-_published.xlsx:326",
-              "Over500_2026_P04_-_published.xlsx:327",
-              "Over500_2026_P04_-_published.xlsx:336",
-              "Over500_2026_P04_-_published.xlsx:345",
-              "Over500_2026_P04_-_published.xlsx:434",
-              "Over500_2026_P04_-_published.xlsx:438",
-              "Over500_2026_P04_-_published.xlsx:443",
-              "Over500_2026_P04_-_published.xlsx:444",
-              "Over500_2026_P04_-_published.xlsx:448",
-              "Over500_2026_P04_-_published.xlsx:467",
-              "Over500_2026_P04_-_published.xlsx:475",
-              "Over500_2026_P04_-_published.xlsx:476"
-            ]
-          },
-          {
-            "supplier_norm": "ELIOR",
-            "supplier": "Elior UK PLC",
-            "company_number": "",
-            "amount_pence": 16141559,
-            "total_gbp": 161415.59,
-            "annualised_estimate_pence": 64566236,
-            "annualised_estimate_gbp": 645662.36,
-            "estimate_label": "annualised estimate",
-            "dominant_tag": "general_procurement",
-            "multi_tag": false,
-            "tag_totals_gbp": {
-              "general_procurement": 161415.59
-            },
-            "n_payments": 9,
-            "narratives": [
-              "Catering"
-            ],
-            "services": [
-              "Adult Social Care"
-            ],
-            "row_ids": [
-              "Over500_2026_P02_-_published.xlsx:525",
-              "Over500_2026_P02_-_published.xlsx:526",
-              "Over500_2026_P02_-_published.xlsx:530",
-              "Over500_2026_P03_-_published.xlsx:433",
-              "Over500_2026_P03_-_published.xlsx:434",
-              "Over500_2026_P03_-_published.xlsx:440",
-              "Over500_2026_P04_-_published.xlsx:532",
-              "Over500_2026_P04_-_published.xlsx:533",
-              "Over500_2026_P04_-_published.xlsx:983"
-            ]
-          },
-          {
-            "supplier_norm": "BBOWT",
-            "supplier": "BBOWT",
-            "company_number": "",
-            "amount_pence": 14431743,
-            "total_gbp": 144317.43,
-            "annualised_estimate_pence": 57726972,
-            "annualised_estimate_gbp": 577269.72,
-            "estimate_label": "annualised estimate",
-            "dominant_tag": "general_procurement",
-            "multi_tag": false,
-            "tag_totals_gbp": {
-              "general_procurement": 144317.43
-            },
-            "n_payments": 3,
-            "narratives": [
-              "Contributions",
-              "Payment to contractor"
-            ],
-            "services": [
-              "Environment"
-            ],
-            "row_ids": [
-              "Over500_2026_P02_-_published.xlsx:641",
-              "Over500_2026_P04_-_published.xlsx:589",
-              "Over500_2026_P04_-_published.xlsx:623"
-            ]
-          },
-          {
-            "supplier_norm": "BROADWAY CARS",
-            "supplier": "BROADWAY CARS",
-            "company_number": "",
-            "amount_pence": 13193893,
-            "total_gbp": 131938.93,
-            "annualised_estimate_pence": 52775572,
-            "annualised_estimate_gbp": 527755.72,
-            "estimate_label": "annualised estimate",
-            "dominant_tag": "general_procurement",
-            "multi_tag": false,
-            "tag_totals_gbp": {
-              "general_procurement": 131938.93
-            },
-            "n_payments": 46,
-            "narratives": [
-              "Transport Hire"
-            ],
-            "services": [
-              "Education & SEND"
-            ],
-            "row_ids": [
-              "Over500_2026_P02_-_published.xlsx:240",
-              "Over500_2026_P02_-_published.xlsx:245",
-              "Over500_2026_P02_-_published.xlsx:249",
-              "Over500_2026_P02_-_published.xlsx:250",
-              "Over500_2026_P02_-_published.xlsx:288",
-              "Over500_2026_P02_-_published.xlsx:292",
-              "Over500_2026_P02_-_published.xlsx:297",
-              "Over500_2026_P02_-_published.xlsx:299",
-              "Over500_2026_P02_-_published.xlsx:314",
-              "Over500_2026_P02_-_published.xlsx:326",
-              "Over500_2026_P02_-_published.xlsx:364",
-              "Over500_2026_P02_-_published.xlsx:367",
-              "Over500_2026_P02_-_published.xlsx:368",
-              "Over500_2026_P02_-_published.xlsx:369",
-              "Over500_2026_P02_-_published.xlsx:371",
-              "Over500_2026_P02_-_published.xlsx:372",
-              "Over500_2026_P02_-_published.xlsx:391",
-              "Over500_2026_P02_-_published.xlsx:394",
-              "Over500_2026_P02_-_published.xlsx:395",
-              "Over500_2026_P02_-_published.xlsx:396",
-              "Over500_2026_P02_-_published.xlsx:403",
-              "Over500_2026_P02_-_published.xlsx:404",
-              "Over500_2026_P02_-_published.xlsx:410",
-              "Over500_2026_P02_-_published.xlsx:411",
-              "Over500_2026_P02_-_published.xlsx:412",
-              "Over500_2026_P02_-_published.xlsx:414",
-              "Over500_2026_P02_-_published.xlsx:415",
-              "Over500_2026_P02_-_published.xlsx:416",
-              "Over500_2026_P02_-_published.xlsx:418",
-              "Over500_2026_P02_-_published.xlsx:419",
-              "Over500_2026_P04_-_published.xlsx:174",
-              "Over500_2026_P04_-_published.xlsx:177",
-              "Over500_2026_P04_-_published.xlsx:184",
-              "Over500_2026_P04_-_published.xlsx:224",
-              "Over500_2026_P04_-_published.xlsx:259",
-              "Over500_2026_P04_-_published.xlsx:260",
-              "Over500_2026_P04_-_published.xlsx:262",
-              "Over500_2026_P04_-_published.xlsx:263",
-              "Over500_2026_P04_-_published.xlsx:264",
-              "Over500_2026_P04_-_published.xlsx:287",
-              "Over500_2026_P04_-_published.xlsx:318",
-              "Over500_2026_P04_-_published.xlsx:447",
-              "Over500_2026_P04_-_published.xlsx:468",
-              "Over500_2026_P04_-_published.xlsx:471",
-              "Over500_2026_P04_-_published.xlsx:472",
-              "Over500_2026_P04_-_published.xlsx:474"
-            ]
-          },
-          {
-            "supplier_norm": "BRACKNELL FOREST BOROUGH CNCL",
-            "supplier": "BRACKNELL FOREST BOROUGH CNCL",
-            "company_number": "",
-            "amount_pence": 13031057,
-            "total_gbp": 130310.57,
-            "annualised_estimate_pence": 52124228,
-            "annualised_estimate_gbp": 521242.28,
-            "estimate_label": "annualised estimate",
-            "dominant_tag": "general_procurement",
-            "multi_tag": false,
-            "tag_totals_gbp": {
-              "general_procurement": 130310.57
-            },
-            "n_payments": 1,
-            "narratives": [
-              "Private Contractors"
-            ],
-            "services": [
-              "Finance, Property & Procurement"
-            ],
-            "row_ids": [
-              "Over500_2026_P03_-_published.xlsx:2217"
-            ]
-          }
-        ],
         "care_or_education_placement": [
           {
             "supplier_norm": "BUPA CARE SERVICES",
@@ -8865,7 +7748,13 @@
               "Over500_2026_P04_-_published.xlsx:887",
               "Over500_2026_P04_-_published.xlsx:916",
               "Over500_2026_P04_-_published.xlsx:927"
-            ]
+            ],
+            "tiers_met_gbp": [
+              1000.0,
+              25000.0,
+              500000.0
+            ],
+            "match_class": "none"
           },
           {
             "supplier_norm": "AFFINITY TRUST SUPPORT",
@@ -9152,7 +8041,13 @@
               "Over500_2026_P04_-_published.xlsx:972",
               "Over500_2026_P04_-_published.xlsx:974",
               "Over500_2026_P04_-_published.xlsx:993"
-            ]
+            ],
+            "tiers_met_gbp": [
+              1000.0,
+              25000.0,
+              500000.0
+            ],
+            "match_class": "none"
           },
           {
             "supplier_norm": "OAKLANDS SEN SCHOOL BERKSHIRE",
@@ -9230,7 +8125,13 @@
               "Over500_2026_P03_-_published.xlsx:3114",
               "Over500_2026_P03_-_published.xlsx:3115",
               "Over500_2026_P03_-_published.xlsx:3116"
-            ]
+            ],
+            "tiers_met_gbp": [
+              1000.0,
+              25000.0,
+              500000.0
+            ],
+            "match_class": "none"
           },
           {
             "supplier_norm": "RUSKIN MILL TRUST",
@@ -9266,7 +8167,13 @@
               "Over500_2026_P04_-_published.xlsx:3252",
               "Over500_2026_P04_-_published.xlsx:3332",
               "Over500_2026_P04_-_published.xlsx:877"
-            ]
+            ],
+            "tiers_met_gbp": [
+              1000.0,
+              25000.0,
+              500000.0
+            ],
+            "match_class": "none"
           },
           {
             "supplier_norm": "AMEGREEN CHILDRENS SERVICES",
@@ -9317,7 +8224,13 @@
               "Over500_2026_P04_-_published.xlsx:3156",
               "Over500_2026_P04_-_published.xlsx:3739",
               "Over500_2026_P04_-_published.xlsx:3752"
-            ]
+            ],
+            "tiers_met_gbp": [
+              1000.0,
+              25000.0,
+              500000.0
+            ],
+            "match_class": "none"
           },
           {
             "supplier_norm": "BRIGHTER LIVING CARE",
@@ -9415,7 +8328,13 @@
               "Over500_2026_P04_-_published.xlsx:3476",
               "Over500_2026_P04_-_published.xlsx:3695",
               "Over500_2026_P04_-_published.xlsx:3696"
-            ]
+            ],
+            "tiers_met_gbp": [
+              1000.0,
+              25000.0,
+              500000.0
+            ],
+            "match_class": "none"
           },
           {
             "supplier_norm": "SUKHBIR SINGH AND HARVINDER SINGH",
@@ -9467,7 +8386,13 @@
               "Over500_2026_P03_-_published.xlsx:3104",
               "Over500_2026_P04_-_published.xlsx:3074",
               "Over500_2026_P04_-_published.xlsx:3742"
-            ]
+            ],
+            "tiers_met_gbp": [
+              1000.0,
+              25000.0,
+              500000.0
+            ],
+            "match_class": "none"
           },
           {
             "supplier_norm": "WE ARE CARE COMPANY",
@@ -9840,7 +8765,13 @@
               "Over500_2026_P04_-_published.xlsx:966",
               "Over500_2026_P04_-_published.xlsx:968",
               "Over500_2026_P04_-_published.xlsx:987"
-            ]
+            ],
+            "tiers_met_gbp": [
+              1000.0,
+              25000.0,
+              500000.0
+            ],
+            "match_class": "none"
           },
           {
             "supplier_norm": "GCH",
@@ -9973,7 +8904,13 @@
               "Over500_2026_P04_-_published.xlsx:2671",
               "Over500_2026_P04_-_published.xlsx:3709",
               "Over500_2026_P04_-_published.xlsx:3727"
-            ]
+            ],
+            "tiers_met_gbp": [
+              1000.0,
+              25000.0,
+              500000.0
+            ],
+            "match_class": "none"
           },
           {
             "supplier_norm": "PHOENIX CHILD CARE GRANGE SCHOOL",
@@ -10022,7 +8959,13 @@
               "Over500_2026_P03_-_published.xlsx:2229",
               "Over500_2026_P04_-_published.xlsx:3329",
               "Over500_2026_P04_-_published.xlsx:3809"
-            ]
+            ],
+            "tiers_met_gbp": [
+              1000.0,
+              25000.0,
+              500000.0
+            ],
+            "match_class": "none"
           },
           {
             "supplier_norm": "VOYAGE CARE",
@@ -10126,7 +9069,13 @@
               "Over500_2026_P04_-_published.xlsx:3575",
               "Over500_2026_P04_-_published.xlsx:3579",
               "Over500_2026_P04_-_published.xlsx:3681"
-            ]
+            ],
+            "tiers_met_gbp": [
+              1000.0,
+              25000.0,
+              500000.0
+            ],
+            "match_class": "none"
           },
           {
             "supplier_norm": "WEST BERKSHIRE MENCAP",
@@ -10270,7 +9219,13 @@
               "Over500_2026_P04_-_published.xlsx:876",
               "Over500_2026_P04_-_published.xlsx:886",
               "Over500_2026_P04_-_published.xlsx:913"
-            ]
+            ],
+            "tiers_met_gbp": [
+              1000.0,
+              25000.0,
+              500000.0
+            ],
+            "match_class": "none"
           },
           {
             "supplier_norm": "PURLEY PARK TRUST",
@@ -10389,7 +9344,13 @@
               "Over500_2026_P04_-_published.xlsx:860",
               "Over500_2026_P04_-_published.xlsx:861",
               "Over500_2026_P04_-_published.xlsx:878"
-            ]
+            ],
+            "tiers_met_gbp": [
+              1000.0,
+              25000.0,
+              500000.0
+            ],
+            "match_class": "none"
           },
           {
             "supplier_norm": "ACORN CARE AND EDUCATION",
@@ -10432,7 +9393,13 @@
               "Over500_2026_P03_-_published.xlsx:2328",
               "Over500_2026_P03_-_published.xlsx:3117",
               "Over500_2026_P03_-_published.xlsx:3118"
-            ]
+            ],
+            "tiers_met_gbp": [
+              1000.0,
+              25000.0,
+              500000.0
+            ],
+            "match_class": "none"
           },
           {
             "supplier_norm": "CAMINO CARE",
@@ -10460,7 +9427,13 @@
               "Over500_2026_P02_-_published.xlsx:2124",
               "Over500_2026_P03_-_published.xlsx:2049",
               "Over500_2026_P04_-_published.xlsx:3769"
-            ]
+            ],
+            "tiers_met_gbp": [
+              1000.0,
+              25000.0,
+              500000.0
+            ],
+            "match_class": "none"
           },
           {
             "supplier_norm": "SM VOICE ADVOCACY",
@@ -10546,7 +9519,13 @@
               "Over500_2026_P04_-_published.xlsx:3673",
               "Over500_2026_P04_-_published.xlsx:3692",
               "Over500_2026_P04_-_published.xlsx:3693"
-            ]
+            ],
+            "tiers_met_gbp": [
+              1000.0,
+              25000.0,
+              500000.0
+            ],
+            "match_class": "none"
           },
           {
             "supplier_norm": "ABI SUPPORT",
@@ -10717,7 +9696,13 @@
               "Over500_2026_P04_-_published.xlsx:2822",
               "Over500_2026_P04_-_published.xlsx:924",
               "Over500_2026_P04_-_published.xlsx:935"
-            ]
+            ],
+            "tiers_met_gbp": [
+              1000.0,
+              25000.0,
+              500000.0
+            ],
+            "match_class": "none"
           },
           {
             "supplier_norm": "CARE SERVICES TO YOU",
@@ -10755,7 +9740,13 @@
               "Over500_2026_P04_-_published.xlsx:3165",
               "Over500_2026_P04_-_published.xlsx:3743",
               "Over500_2026_P04_-_published.xlsx:3750"
-            ]
+            ],
+            "tiers_met_gbp": [
+              1000.0,
+              25000.0,
+              500000.0
+            ],
+            "match_class": "none"
           },
           {
             "supplier_norm": "JOHAV CARE SUPPORT HEALTHCARE",
@@ -10834,7 +9825,13 @@
               "Over500_2026_P04_-_published.xlsx:3563",
               "Over500_2026_P04_-_published.xlsx:3570",
               "Over500_2026_P04_-_published.xlsx:3734"
-            ]
+            ],
+            "tiers_met_gbp": [
+              1000.0,
+              25000.0,
+              500000.0
+            ],
+            "match_class": "none"
           },
           {
             "supplier_norm": "DIMENSIONS",
@@ -10926,7 +9923,13 @@
               "Over500_2026_P04_-_published.xlsx:3049",
               "Over500_2026_P04_-_published.xlsx:3576",
               "Over500_2026_P04_-_published.xlsx:3577"
-            ]
+            ],
+            "tiers_met_gbp": [
+              1000.0,
+              25000.0,
+              500000.0
+            ],
+            "match_class": "none"
           }
         ],
         "grant": [
@@ -10955,7 +9958,13 @@
               "Over500_2026_P03_-_published.xlsx:511",
               "Over500_2026_P03_-_published.xlsx:623",
               "Over500_2026_P04_-_published.xlsx:703"
-            ]
+            ],
+            "tiers_met_gbp": [
+              1000.0,
+              25000.0,
+              500000.0
+            ],
+            "match_class": "none"
           },
           {
             "supplier_norm": "ACRES OF FUN DAY NURSERY AND PRE SCHOOL",
@@ -10980,7 +9989,13 @@
             ],
             "row_ids": [
               "Over500_2026_P03_-_published.xlsx:2075"
-            ]
+            ],
+            "tiers_met_gbp": [
+              1000.0,
+              25000.0,
+              500000.0
+            ],
+            "match_class": "none"
           },
           {
             "supplier_norm": "ROCKING HORSE DAY NURSERY NEWBURY RACECOURSE",
@@ -11006,7 +10021,13 @@
             "row_ids": [
               "Over500_2026_P03_-_published.xlsx:525",
               "Over500_2026_P03_-_published.xlsx:620"
-            ]
+            ],
+            "tiers_met_gbp": [
+              1000.0,
+              25000.0,
+              500000.0
+            ],
+            "match_class": "none"
           },
           {
             "supplier_norm": "TIGERS DAY NURSERY",
@@ -11036,7 +10057,13 @@
               "Over500_2026_P04_-_published.xlsx:3255",
               "Over500_2026_P04_-_published.xlsx:578",
               "Over500_2026_P04_-_published.xlsx:704"
-            ]
+            ],
+            "tiers_met_gbp": [
+              1000.0,
+              25000.0,
+              500000.0
+            ],
+            "match_class": "none"
           },
           {
             "supplier_norm": "TIGERS AT THEALE DAY NURSERY",
@@ -11062,7 +10089,13 @@
             "row_ids": [
               "Over500_2026_P03_-_published.xlsx:2081",
               "Over500_2026_P03_-_published.xlsx:634"
-            ]
+            ],
+            "tiers_met_gbp": [
+              1000.0,
+              25000.0,
+              500000.0
+            ],
+            "match_class": "none"
           },
           {
             "supplier_norm": "BROOKFIELDS SCHOOL",
@@ -11087,7 +10120,13 @@
             ],
             "row_ids": [
               "Over500_2026_P04_-_published.xlsx:767"
-            ]
+            ],
+            "tiers_met_gbp": [
+              1000.0,
+              25000.0,
+              500000.0
+            ],
+            "match_class": "none"
           },
           {
             "supplier_norm": "WOODLANDS DAY NURSERY",
@@ -11113,7 +10152,13 @@
             "row_ids": [
               "Over500_2026_P03_-_published.xlsx:539",
               "Over500_2026_P03_-_published.xlsx:626"
-            ]
+            ],
+            "tiers_met_gbp": [
+              1000.0,
+              25000.0,
+              500000.0
+            ],
+            "match_class": "none"
           },
           {
             "supplier_norm": "JUBILEE GEMS",
@@ -11138,7 +10183,13 @@
             ],
             "row_ids": [
               "Over500_2026_P03_-_published.xlsx:540"
-            ]
+            ],
+            "tiers_met_gbp": [
+              1000.0,
+              25000.0,
+              500000.0
+            ],
+            "match_class": "none"
           },
           {
             "supplier_norm": "LITTLE ME DAY NURSERY",
@@ -11163,7 +10214,13 @@
             ],
             "row_ids": [
               "Over500_2026_P03_-_published.xlsx:2061"
-            ]
+            ],
+            "tiers_met_gbp": [
+              1000.0,
+              25000.0,
+              500000.0
+            ],
+            "match_class": "none"
           },
           {
             "supplier_norm": "JUST LEARNING TA BUSY BEES NEWBURY",
@@ -11189,7 +10246,13 @@
             "row_ids": [
               "Over500_2026_P03_-_published.xlsx:494",
               "Over500_2026_P03_-_published.xlsx:588"
-            ]
+            ],
+            "tiers_met_gbp": [
+              1000.0,
+              25000.0,
+              500000.0
+            ],
+            "match_class": "none"
           },
           {
             "supplier_norm": "QUACKERS DAY NURSERY",
@@ -11214,7 +10277,13 @@
             ],
             "row_ids": [
               "Over500_2026_P03_-_published.xlsx:605"
-            ]
+            ],
+            "tiers_met_gbp": [
+              1000.0,
+              25000.0,
+              500000.0
+            ],
+            "match_class": "none"
           },
           {
             "supplier_norm": "PASKAY",
@@ -11241,7 +10310,13 @@
               "Over500_2026_P03_-_published.xlsx:558",
               "Over500_2026_P03_-_published.xlsx:607",
               "Over500_2026_P04_-_published.xlsx:1265"
-            ]
+            ],
+            "tiers_met_gbp": [
+              1000.0,
+              25000.0,
+              500000.0
+            ],
+            "match_class": "none"
           },
           {
             "supplier_norm": "FLEDGLINGS DAY NURSERY",
@@ -11268,7 +10343,13 @@
               "Over500_2026_P02_-_published.xlsx:622",
               "Over500_2026_P03_-_published.xlsx:619",
               "Over500_2026_P04_-_published.xlsx:1192"
-            ]
+            ],
+            "tiers_met_gbp": [
+              1000.0,
+              25000.0,
+              500000.0
+            ],
+            "match_class": "none"
           },
           {
             "supplier_norm": "MYRTLE TREE HOLDINGS",
@@ -11294,7 +10375,13 @@
             "row_ids": [
               "Over500_2026_P03_-_published.xlsx:2073",
               "Over500_2026_P03_-_published.xlsx:556"
-            ]
+            ],
+            "tiers_met_gbp": [
+              1000.0,
+              25000.0,
+              500000.0
+            ],
+            "match_class": "none"
           },
           {
             "supplier_norm": "SPRINGBURN CHILDCARE",
@@ -11319,7 +10406,13 @@
             ],
             "row_ids": [
               "Over500_2026_P03_-_published.xlsx:2072"
-            ]
+            ],
+            "tiers_met_gbp": [
+              1000.0,
+              25000.0,
+              500000.0
+            ],
+            "match_class": "none"
           },
           {
             "supplier_norm": "ST GABRIELS SCHOOL",
@@ -11352,7 +10445,13 @@
               "Over500_2026_P04_-_published.xlsx:3247",
               "Over500_2026_P04_-_published.xlsx:3324",
               "Over500_2026_P04_-_published.xlsx:3330"
-            ]
+            ],
+            "tiers_met_gbp": [
+              1000.0,
+              25000.0,
+              500000.0
+            ],
+            "match_class": "none"
           },
           {
             "supplier_norm": "FORBURY GARDENS DAY NURSERY",
@@ -11378,7 +10477,13 @@
             "row_ids": [
               "Over500_2026_P03_-_published.xlsx:2096",
               "Over500_2026_P03_-_published.xlsx:541"
-            ]
+            ],
+            "tiers_met_gbp": [
+              1000.0,
+              25000.0,
+              500000.0
+            ],
+            "match_class": "none"
           },
           {
             "supplier_norm": "BERKS FOODBANK",
@@ -11405,7 +10510,12 @@
               "Over500_2026_P02_-_published.xlsx:637",
               "Over500_2026_P03_-_published.xlsx:2099",
               "Over500_2026_P03_-_published.xlsx:2100"
-            ]
+            ],
+            "tiers_met_gbp": [
+              1000.0,
+              25000.0
+            ],
+            "match_class": "none"
           },
           {
             "supplier_norm": "NEWBURY COMMUNITY RESOURCE CENTRE",
@@ -11467,7 +10577,12 @@
               "Over500_2026_P04_-_published.xlsx:707",
               "Over500_2026_P04_-_published.xlsx:773",
               "Over500_2026_P04_-_published.xlsx:874"
-            ]
+            ],
+            "tiers_met_gbp": [
+              1000.0,
+              25000.0
+            ],
+            "match_class": "none"
           },
           {
             "supplier_norm": "ABACUS NURSERY",
@@ -11493,7 +10608,12 @@
             "row_ids": [
               "Over500_2026_P03_-_published.xlsx:512",
               "Over500_2026_P03_-_published.xlsx:624"
-            ]
+            ],
+            "tiers_met_gbp": [
+              1000.0,
+              25000.0
+            ],
+            "match_class": "none"
           }
         ],
         "agency_staff": [
@@ -11533,7 +10653,13 @@
               "Over500_2026_P04_-_published.xlsx:7",
               "Over500_2026_P04_-_published.xlsx:8",
               "Over500_2026_P04_-_published.xlsx:9"
-            ]
+            ],
+            "tiers_met_gbp": [
+              1000.0,
+              25000.0,
+              500000.0
+            ],
+            "match_class": "none"
           },
           {
             "supplier_norm": "A PROJECT",
@@ -11561,7 +10687,11 @@
               "Over500_2026_P03_-_published.xlsx:8",
               "Over500_2026_P04_-_published.xlsx:17",
               "Over500_2026_P04_-_published.xlsx:18"
-            ]
+            ],
+            "tiers_met_gbp": [
+              1000.0
+            ],
+            "match_class": "not_classed_below_publication_threshold"
           },
           {
             "supplier_norm": "E BURTON SERVICES",
@@ -11586,7 +10716,11 @@
             ],
             "row_ids": [
               "Over500_2026_P02_-_published.xlsx:4"
-            ]
+            ],
+            "tiers_met_gbp": [
+              1000.0
+            ],
+            "match_class": "not_classed_below_publication_threshold"
           },
           {
             "supplier_norm": "AMBITION 24 HOURS",
@@ -11612,7 +10746,11 @@
             "row_ids": [
               "Over500_2026_P03_-_published.xlsx:4",
               "Over500_2026_P03_-_published.xlsx:5"
-            ]
+            ],
+            "tiers_met_gbp": [
+              1000.0
+            ],
+            "match_class": "not_classed_below_publication_threshold"
           },
           {
             "supplier_norm": "INDEPENDENT CLINICAL SERVICES",
@@ -11637,7 +10775,11 @@
             ],
             "row_ids": [
               "Over500_2026_P02_-_published.xlsx:3"
-            ]
+            ],
+            "tiers_met_gbp": [
+              1000.0
+            ],
+            "match_class": "not_classed_below_publication_threshold"
           },
           {
             "supplier_norm": "CHANCES GIVES CHOICES",
@@ -11662,7 +10804,11 @@
             ],
             "row_ids": [
               "Over500_2026_P04_-_published.xlsx:4"
-            ]
+            ],
+            "tiers_met_gbp": [
+              1000.0
+            ],
+            "match_class": "not_classed_below_publication_threshold"
           }
         ],
         "premises_non_procurement": [
@@ -11692,7 +10838,13 @@
             "row_ids": [
               "Over500_2026_P04_-_published.xlsx:153",
               "Over500_2026_P04_-_published.xlsx:382"
-            ]
+            ],
+            "tiers_met_gbp": [
+              1000.0,
+              25000.0,
+              500000.0
+            ],
+            "match_class": "none"
           },
           {
             "supplier_norm": "KB REAL ESTATE MANAGEMENT",
@@ -11783,7 +10935,12 @@
               "Over500_2026_P04_-_published.xlsx:97",
               "Over500_2026_P04_-_published.xlsx:98",
               "Over500_2026_P04_-_published.xlsx:99"
-            ]
+            ],
+            "tiers_met_gbp": [
+              1000.0,
+              25000.0
+            ],
+            "match_class": "none"
           },
           {
             "supplier_norm": "READING WEST APARTHOTEL",
@@ -11810,7 +10967,12 @@
               "Over500_2026_P02_-_published.xlsx:114",
               "Over500_2026_P03_-_published.xlsx:105",
               "Over500_2026_P04_-_published.xlsx:109"
-            ]
+            ],
+            "tiers_met_gbp": [
+              1000.0,
+              25000.0
+            ],
+            "match_class": "none"
           },
           {
             "supplier_norm": "SOVEREIGN HOUSING GROUP",
@@ -11880,7 +11042,12 @@
               "Over500_2026_P03_-_published.xlsx:99",
               "Over500_2026_P04_-_published.xlsx:772",
               "Over500_2026_P04_-_published.xlsx:775"
-            ]
+            ],
+            "tiers_met_gbp": [
+              1000.0,
+              25000.0
+            ],
+            "match_class": "none"
           },
           {
             "supplier_norm": "CASTLE WATER",
@@ -11913,7 +11080,12 @@
               "Over500_2026_P03_-_published.xlsx:129",
               "Over500_2026_P03_-_published.xlsx:304",
               "Over500_2026_P04_-_published.xlsx:395"
-            ]
+            ],
+            "tiers_met_gbp": [
+              1000.0,
+              25000.0
+            ],
+            "match_class": "none"
           },
           {
             "supplier_norm": "KARD GROUP",
@@ -11943,7 +11115,12 @@
               "Over500_2026_P03_-_published.xlsx:94",
               "Over500_2026_P04_-_published.xlsx:115",
               "Over500_2026_P04_-_published.xlsx:387"
-            ]
+            ],
+            "tiers_met_gbp": [
+              1000.0,
+              25000.0
+            ],
+            "match_class": "none"
           },
           {
             "supplier_norm": "TENNENT HOMES 2019",
@@ -11985,7 +11162,12 @@
               "Over500_2026_P04_-_published.xlsx:72",
               "Over500_2026_P04_-_published.xlsx:89",
               "Over500_2026_P04_-_published.xlsx:91"
-            ]
+            ],
+            "tiers_met_gbp": [
+              1000.0,
+              25000.0
+            ],
+            "match_class": "none"
           },
           {
             "supplier_norm": "FIS PAYMENTS TRAVELODGE",
@@ -12011,7 +11193,12 @@
             "row_ids": [
               "Over500_2026_P02_-_published.xlsx:138",
               "Over500_2026_P04_-_published.xlsx:389"
-            ]
+            ],
+            "tiers_met_gbp": [
+              1000.0,
+              25000.0
+            ],
+            "match_class": "none"
           },
           {
             "supplier_norm": "LEASEPLAN",
@@ -12040,7 +11227,12 @@
               "Over500_2026_P03_-_published.xlsx:362",
               "Over500_2026_P03_-_published.xlsx:368",
               "Over500_2026_P04_-_published.xlsx:897"
-            ]
+            ],
+            "tiers_met_gbp": [
+              1000.0,
+              25000.0
+            ],
+            "match_class": "none"
           },
           {
             "supplier_norm": "SPARE CRIB GLOBAL",
@@ -12076,7 +11268,12 @@
               "Over500_2026_P04_-_published.xlsx:73",
               "Over500_2026_P04_-_published.xlsx:74",
               "Over500_2026_P04_-_published.xlsx:75"
-            ]
+            ],
+            "tiers_met_gbp": [
+              1000.0,
+              25000.0
+            ],
+            "match_class": "none"
           },
           {
             "supplier_norm": "CELADOR APARTMENTS",
@@ -12105,7 +11302,12 @@
               "Over500_2026_P02_-_published.xlsx:116",
               "Over500_2026_P03_-_published.xlsx:297",
               "Over500_2026_P04_-_published.xlsx:388"
-            ]
+            ],
+            "tiers_met_gbp": [
+              1000.0,
+              25000.0
+            ],
+            "match_class": "none"
           },
           {
             "supplier_norm": "EXCALIBUR ACADEMIES TRUST JOHN O GAUNT SCHOOL",
@@ -12134,7 +11336,12 @@
             "row_ids": [
               "Over500_2026_P02_-_published.xlsx:626",
               "Over500_2026_P04_-_published.xlsx:384"
-            ]
+            ],
+            "tiers_met_gbp": [
+              1000.0,
+              25000.0
+            ],
+            "match_class": "none"
           },
           {
             "supplier_norm": "HENWICK PROPERTIES",
@@ -12167,7 +11374,12 @@
               "Over500_2026_P04_-_published.xlsx:774",
               "Over500_2026_P04_-_published.xlsx:90",
               "Over500_2026_P04_-_published.xlsx:92"
-            ]
+            ],
+            "tiers_met_gbp": [
+              1000.0,
+              25000.0
+            ],
+            "match_class": "none"
           },
           {
             "supplier_norm": "JONES ROBINSON LETTINGS",
@@ -12195,7 +11407,12 @@
               "Over500_2026_P02_-_published.xlsx:111",
               "Over500_2026_P03_-_published.xlsx:101",
               "Over500_2026_P03_-_published.xlsx:88"
-            ]
+            ],
+            "tiers_met_gbp": [
+              1000.0,
+              25000.0
+            ],
+            "match_class": "none"
           },
           {
             "supplier_norm": "ENGLEFIELD ESTATE LP",
@@ -12220,7 +11437,12 @@
             ],
             "row_ids": [
               "Over500_2026_P03_-_published.xlsx:128"
-            ]
+            ],
+            "tiers_met_gbp": [
+              1000.0,
+              25000.0
+            ],
+            "match_class": "none"
           },
           {
             "supplier_norm": "CHP MANAGEMENT",
@@ -12246,7 +11468,11 @@
             "row_ids": [
               "Over500_2026_P03_-_published.xlsx:93",
               "Over500_2026_P04_-_published.xlsx:104"
-            ]
+            ],
+            "tiers_met_gbp": [
+              1000.0
+            ],
+            "match_class": "not_classed_below_publication_threshold"
           },
           {
             "supplier_norm": "WARMINGHAM ESTATE AGENTS",
@@ -12271,7 +11497,11 @@
             ],
             "row_ids": [
               "Over500_2026_P02_-_published.xlsx:112"
-            ]
+            ],
+            "tiers_met_gbp": [
+              1000.0
+            ],
+            "match_class": "not_classed_below_publication_threshold"
           },
           {
             "supplier_norm": "ROBSON PROPERTY MANAGEMENT SERVICE CHARGE",
@@ -12296,7 +11526,11 @@
             ],
             "row_ids": [
               "Over500_2026_P03_-_published.xlsx:303"
-            ]
+            ],
+            "tiers_met_gbp": [
+              1000.0
+            ],
+            "match_class": "not_classed_below_publication_threshold"
           },
           {
             "supplier_norm": "PREMIER INN BUSINESS ACCOUNT",
@@ -12322,7 +11556,11 @@
             "row_ids": [
               "Over500_2026_P02_-_published.xlsx:137",
               "Over500_2026_P04_-_published.xlsx:94"
-            ]
+            ],
+            "tiers_met_gbp": [
+              1000.0
+            ],
+            "match_class": "not_classed_below_publication_threshold"
           },
           {
             "supplier_norm": "DOWNER AND CO",
@@ -12348,9 +11586,20 @@
             "row_ids": [
               "Over500_2026_P02_-_published.xlsx:106",
               "Over500_2026_P03_-_published.xlsx:102"
-            ]
+            ],
+            "tiers_met_gbp": [
+              1000.0
+            ],
+            "match_class": "not_classed_below_publication_threshold"
           }
         ]
+      },
+      "match_class_counts": {
+        "exact": 40,
+        "near_contain": 5,
+        "near_ratio": 2,
+        "none": 627,
+        "not_classed_below_publication_threshold": 409
       },
       "statutory_tiers": [],
       "top20": [
@@ -12504,7 +11753,13 @@
             "Over500_2026_P04_-_published.xlsx:821",
             "Over500_2026_P04_-_published.xlsx:822",
             "Over500_2026_P04_-_published.xlsx:828"
-          ]
+          ],
+          "tiers_met_gbp": [
+            1000.0,
+            25000.0,
+            500000.0
+          ],
+          "match_class": "none"
         },
         {
           "supplier_norm": "VEOLIA ES WEST BERKSHIRE",
@@ -12531,7 +11786,13 @@
             "Over500_2026_P02_-_published.xlsx:2196",
             "Over500_2026_P03_-_published.xlsx:2146",
             "Over500_2026_P04_-_published.xlsx:3194"
-          ]
+          ],
+          "tiers_met_gbp": [
+            1000.0,
+            25000.0,
+            500000.0
+          ],
+          "match_class": "none"
         },
         {
           "supplier_norm": "MILLBROOK HEALTHCARE",
@@ -12559,7 +11820,13 @@
             "Over500_2026_P03_-_published.xlsx:2216",
             "Over500_2026_P04_-_published.xlsx:3311",
             "Over500_2026_P04_-_published.xlsx:3789"
-          ]
+          ],
+          "tiers_met_gbp": [
+            1000.0,
+            25000.0,
+            500000.0
+          ],
+          "match_class": "none"
         },
         {
           "supplier_norm": "BUPA CARE SERVICES",
@@ -12953,7 +12220,13 @@
             "Over500_2026_P04_-_published.xlsx:887",
             "Over500_2026_P04_-_published.xlsx:916",
             "Over500_2026_P04_-_published.xlsx:927"
-          ]
+          ],
+          "tiers_met_gbp": [
+            1000.0,
+            25000.0,
+            500000.0
+          ],
+          "match_class": "none"
         },
         {
           "supplier_norm": "COMENSURA",
@@ -12991,7 +12264,13 @@
             "Over500_2026_P04_-_published.xlsx:7",
             "Over500_2026_P04_-_published.xlsx:8",
             "Over500_2026_P04_-_published.xlsx:9"
-          ]
+          ],
+          "tiers_met_gbp": [
+            1000.0,
+            25000.0,
+            500000.0
+          ],
+          "match_class": "none"
         },
         {
           "supplier_norm": "AFFINITY TRUST SUPPORT",
@@ -13278,7 +12557,13 @@
             "Over500_2026_P04_-_published.xlsx:972",
             "Over500_2026_P04_-_published.xlsx:974",
             "Over500_2026_P04_-_published.xlsx:993"
-          ]
+          ],
+          "tiers_met_gbp": [
+            1000.0,
+            25000.0,
+            500000.0
+          ],
+          "match_class": "none"
         },
         {
           "supplier_norm": "OAKLANDS SEN SCHOOL BERKSHIRE",
@@ -13356,7 +12641,13 @@
             "Over500_2026_P03_-_published.xlsx:3114",
             "Over500_2026_P03_-_published.xlsx:3115",
             "Over500_2026_P03_-_published.xlsx:3116"
-          ]
+          ],
+          "tiers_met_gbp": [
+            1000.0,
+            25000.0,
+            500000.0
+          ],
+          "match_class": "none"
         },
         {
           "supplier_norm": "RUSKIN MILL TRUST",
@@ -13392,7 +12683,13 @@
             "Over500_2026_P04_-_published.xlsx:3252",
             "Over500_2026_P04_-_published.xlsx:3332",
             "Over500_2026_P04_-_published.xlsx:877"
-          ]
+          ],
+          "tiers_met_gbp": [
+            1000.0,
+            25000.0,
+            500000.0
+          ],
+          "match_class": "none"
         },
         {
           "supplier_norm": "AMEGREEN CHILDRENS SERVICES",
@@ -13443,7 +12740,13 @@
             "Over500_2026_P04_-_published.xlsx:3156",
             "Over500_2026_P04_-_published.xlsx:3739",
             "Over500_2026_P04_-_published.xlsx:3752"
-          ]
+          ],
+          "tiers_met_gbp": [
+            1000.0,
+            25000.0,
+            500000.0
+          ],
+          "match_class": "none"
         },
         {
           "supplier_norm": "BRIGHTER LIVING CARE",
@@ -13541,7 +12844,13 @@
             "Over500_2026_P04_-_published.xlsx:3476",
             "Over500_2026_P04_-_published.xlsx:3695",
             "Over500_2026_P04_-_published.xlsx:3696"
-          ]
+          ],
+          "tiers_met_gbp": [
+            1000.0,
+            25000.0,
+            500000.0
+          ],
+          "match_class": "none"
         },
         {
           "supplier_norm": "SUKHBIR SINGH AND HARVINDER SINGH",
@@ -13593,7 +12902,13 @@
             "Over500_2026_P03_-_published.xlsx:3104",
             "Over500_2026_P04_-_published.xlsx:3074",
             "Over500_2026_P04_-_published.xlsx:3742"
-          ]
+          ],
+          "tiers_met_gbp": [
+            1000.0,
+            25000.0,
+            500000.0
+          ],
+          "match_class": "none"
         },
         {
           "supplier_norm": "WE ARE CARE COMPANY",
@@ -13966,7 +13281,13 @@
             "Over500_2026_P04_-_published.xlsx:966",
             "Over500_2026_P04_-_published.xlsx:968",
             "Over500_2026_P04_-_published.xlsx:987"
-          ]
+          ],
+          "tiers_met_gbp": [
+            1000.0,
+            25000.0,
+            500000.0
+          ],
+          "match_class": "none"
         },
         {
           "supplier_norm": "BETTER GROUP",
@@ -14021,7 +13342,13 @@
             "Over500_2026_P04_-_published.xlsx:783",
             "Over500_2026_P04_-_published.xlsx:911",
             "Over500_2026_P04_-_published.xlsx:912"
-          ]
+          ],
+          "tiers_met_gbp": [
+            1000.0,
+            25000.0,
+            500000.0
+          ],
+          "match_class": "none"
         },
         {
           "supplier_norm": "GCH",
@@ -14154,7 +13481,13 @@
             "Over500_2026_P04_-_published.xlsx:2671",
             "Over500_2026_P04_-_published.xlsx:3709",
             "Over500_2026_P04_-_published.xlsx:3727"
-          ]
+          ],
+          "tiers_met_gbp": [
+            1000.0,
+            25000.0,
+            500000.0
+          ],
+          "match_class": "none"
         },
         {
           "supplier_norm": "PHOENIX CHILD CARE GRANGE SCHOOL",
@@ -14203,7 +13536,13 @@
             "Over500_2026_P03_-_published.xlsx:2229",
             "Over500_2026_P04_-_published.xlsx:3329",
             "Over500_2026_P04_-_published.xlsx:3809"
-          ]
+          ],
+          "tiers_met_gbp": [
+            1000.0,
+            25000.0,
+            500000.0
+          ],
+          "match_class": "none"
         },
         {
           "supplier_norm": "VOYAGE CARE",
@@ -14307,7 +13646,13 @@
             "Over500_2026_P04_-_published.xlsx:3575",
             "Over500_2026_P04_-_published.xlsx:3579",
             "Over500_2026_P04_-_published.xlsx:3681"
-          ]
+          ],
+          "tiers_met_gbp": [
+            1000.0,
+            25000.0,
+            500000.0
+          ],
+          "match_class": "none"
         },
         {
           "supplier_norm": "SOFTWAREONE",
@@ -14336,7 +13681,13 @@
             "Over500_2026_P02_-_published.xlsx:474",
             "Over500_2026_P02_-_published.xlsx:653",
             "Over500_2026_P02_-_published.xlsx:654"
-          ]
+          ],
+          "tiers_met_gbp": [
+            1000.0,
+            25000.0,
+            500000.0
+          ],
+          "match_class": "none"
         },
         {
           "supplier_norm": "LIVITY LIFE",
@@ -14369,7 +13720,13 @@
             "Over500_2026_P04_-_published.xlsx:3197",
             "Over500_2026_P04_-_published.xlsx:3215",
             "Over500_2026_P04_-_published.xlsx:3310"
-          ]
+          ],
+          "tiers_met_gbp": [
+            1000.0,
+            25000.0,
+            500000.0
+          ],
+          "match_class": "none"
         },
         {
           "supplier_norm": "WEST BERKSHIRE MENCAP",
@@ -14513,7 +13870,13 @@
             "Over500_2026_P04_-_published.xlsx:876",
             "Over500_2026_P04_-_published.xlsx:886",
             "Over500_2026_P04_-_published.xlsx:913"
-          ]
+          ],
+          "tiers_met_gbp": [
+            1000.0,
+            25000.0,
+            500000.0
+          ],
+          "match_class": "none"
         },
         {
           "supplier_norm": "PURLEY PARK TRUST",
@@ -14632,7 +13995,13 @@
             "Over500_2026_P04_-_published.xlsx:860",
             "Over500_2026_P04_-_published.xlsx:861",
             "Over500_2026_P04_-_published.xlsx:878"
-          ]
+          ],
+          "tiers_met_gbp": [
+            1000.0,
+            25000.0,
+            500000.0
+          ],
+          "match_class": "none"
         }
       ],
       "full_file": "outputs/analytics-full/high-value-suppliers.csv"
@@ -14686,6 +14055,7 @@
               "suppliers": 1
             }
           },
+          "by_tag_unit": "rows = groups (tag = dominant tag by GBP within the group); gbp = value beyond the first instance",
           "top20": [
             {
               "group_id": "DUP-d244f833422ab2",
@@ -15443,6 +14813,7 @@
               "suppliers": 5
             }
           },
+          "by_tag_unit": "rows = groups (tag = dominant tag by GBP within the group); gbp = value beyond the first instance",
           "top20": [
             {
               "group_id": "DUP-b1ae2b7aa3e24e",
@@ -16818,7 +16189,7 @@
       },
       "rule_ids": [
         "CPR-70",
-        "CPR-71"
+        "CPR-72"
       ],
       "contracts_present": true,
       "register_present": false,
@@ -16845,39 +16216,41 @@
       },
       "unmatched_by_tag": {
         "general_procurement": {
-          "rows": 191,
-          "amount_pence": 2488794068,
+          "suppliers": 191,
           "gbp": 24887940.68,
-          "suppliers": 191
+          "annualised_estimate_gbp": 99551762.72,
+          "multi_tag_suppliers": 7
         },
         "care_or_education_placement": {
-          "rows": 304,
-          "amount_pence": 3022353238,
+          "suppliers": 304,
           "gbp": 30223532.38,
-          "suppliers": 304
+          "annualised_estimate_gbp": 120894129.52,
+          "multi_tag_suppliers": 7
         },
         "grant": {
-          "rows": 123,
-          "amount_pence": 586873951,
+          "suppliers": 123,
           "gbp": 5868739.51,
-          "suppliers": 123
+          "annualised_estimate_gbp": 23474958.04,
+          "multi_tag_suppliers": 6
         },
         "agency_staff": {
-          "rows": 1,
-          "amount_pence": 127555215,
+          "suppliers": 1,
           "gbp": 1275552.15,
-          "suppliers": 1
+          "annualised_estimate_gbp": 5102208.6,
+          "multi_tag_suppliers": 0
         },
         "premises_non_procurement": {
-          "rows": 15,
-          "amount_pence": 53028675,
+          "suppliers": 15,
           "gbp": 530286.75,
-          "suppliers": 15
+          "annualised_estimate_gbp": 2121147.0,
+          "multi_tag_suppliers": 4
         }
       },
       "headline": {
+        "definition": "unmatched (no exact match) suppliers whose dominant tag is general_procurement",
         "count": 191,
         "gbp": 24887940.68,
+        "annualised_estimate_gbp": 99551762.72,
         "top20": [
           {
             "supplier_norm": "VOLKERHIGHWAYS",
@@ -17816,6 +17189,7 @@
           }
         ]
       },
+      "placement_note": "Placement-tagged suppliers are listed separately: App C row F (CPR-81) exempts individually chosen placements from competition, so no notice is expected.",
       "top20": [
         {
           "supplier_norm": "VOLKERHIGHWAYS",
@@ -20189,7 +19563,7 @@
         "match": "exact only; every matching notice must have ended before window start"
       },
       "rule_ids": [
-        "CPR-77"
+        "CPR-78"
       ],
       "count": 7,
       "gbp": 190366.92,
@@ -20465,7 +19839,8 @@
         "eligibility": "exactly one active notice, one supplier on that notice, positive award, complete valid duration"
       },
       "rule_ids": [
-        "CPR-78"
+        "CPR-79",
+        "CPR-80"
       ],
       "count": 8,
       "gbp": 736650.97,

@@ -1,0 +1,17 @@
+$ python -I docs/claude-evidence/step-3.2/independent_reconcile.py .
+Over500_2026_P02_-_published.xlsx: header row 1
+Over500_2026_P03_-_published.xlsx: header row 2
+Over500_2026_P04_-_published.xlsx: header row 2
+PASS rows_raw matches raw workbooks  [json=10607 raw=10607]
+INFO raw total £80427254.26; analytics population total fields: {'total_gbp': 66778104.78, 'raw_total_gbp': 80427254.26}
+PASS redacted_supplier exclusion rows match  [json=2015 raw=2015]
+PASS months_covered matches  [json=3 raw=3]
+PASS threshold_clustering: 369 flagged rows exist with same amount  [bad=[]]
+PASS threshold_clustering: every amount within [0.9T, T]  [bad=[]]
+PASS split: 502 groups reconcile to raw rows (sum, n, amounts, date span)
+PASS dup: 698 groups reconcile to raw rows (sum, n, amounts, date span)
+PASS contracts.csv rows_in_file  [json=150 raw=150]
+PASS contracts.csv rows_for_council  [json=141 raw=141]
+
+SUMMARY failures=0
+exit=0

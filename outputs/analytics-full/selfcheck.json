@@ -1,71 +1,85 @@
 {
-  "producer": "Codex preparation; independent Python arithmetic checks, not Claude Code verification",
+  "producer": "scripts/selfcheck.py run by the Claude Code spend-analyst sub-agent; independent re-derivation from spend-clean.csv plus openpyxl workbook row check",
   "passed": true,
   "checks": [
     {
       "test": "threshold_clustering",
       "passed": true,
       "row_ids": [
-        "Over500_2026_P02_-_published.xlsx:34"
+        "Over500_2026_P04_-_published.xlsx:2239"
       ],
       "independent_check": {
-        "amount_pence": 100000,
-        "threshold_pence": 100000
-      }
+        "amount_pence": 2492600,
+        "threshold_pence": 2500000
+      },
+      "workbook_row_checked": "Over500_2026_P04_-_published.xlsx:2239",
+      "workbook_row_matches": true
     },
     {
       "test": "split_purchases",
       "passed": true,
       "row_ids": [
-        "Over500_2026_P04_-_published.xlsx:1237",
-        "Over500_2026_P04_-_published.xlsx:1239",
-        "Over500_2026_P04_-_published.xlsx:1323",
-        "Over500_2026_P04_-_published.xlsx:1324",
-        "Over500_2026_P04_-_published.xlsx:1326",
-        "Over500_2026_P04_-_published.xlsx:1330",
-        "Over500_2026_P04_-_published.xlsx:1332",
-        "Over500_2026_P04_-_published.xlsx:1336",
-        "Over500_2026_P04_-_published.xlsx:1373",
-        "Over500_2026_P04_-_published.xlsx:1377",
-        "Over500_2026_P04_-_published.xlsx:1451",
-        "Over500_2026_P04_-_published.xlsx:1463",
-        "Over500_2026_P04_-_published.xlsx:1532",
-        "Over500_2026_P04_-_published.xlsx:1572",
-        "Over500_2026_P04_-_published.xlsx:1606",
-        "Over500_2026_P04_-_published.xlsx:1610",
-        "Over500_2026_P04_-_published.xlsx:1611",
-        "Over500_2026_P04_-_published.xlsx:1612",
-        "Over500_2026_P04_-_published.xlsx:1665",
-        "Over500_2026_P04_-_published.xlsx:1668",
-        "Over500_2026_P04_-_published.xlsx:1669",
-        "Over500_2026_P04_-_published.xlsx:1670",
-        "Over500_2026_P04_-_published.xlsx:1672",
-        "Over500_2026_P04_-_published.xlsx:1675",
-        "Over500_2026_P04_-_published.xlsx:1689",
-        "Over500_2026_P04_-_published.xlsx:1741",
-        "Over500_2026_P04_-_published.xlsx:1742",
-        "Over500_2026_P04_-_published.xlsx:1816",
-        "Over500_2026_P04_-_published.xlsx:1884",
-        "Over500_2026_P04_-_published.xlsx:2057",
-        "Over500_2026_P04_-_published.xlsx:2059",
-        "Over500_2026_P04_-_published.xlsx:2060",
-        "Over500_2026_P04_-_published.xlsx:2062",
-        "Over500_2026_P04_-_published.xlsx:2063",
-        "Over500_2026_P04_-_published.xlsx:2113",
-        "Over500_2026_P04_-_published.xlsx:2365",
-        "Over500_2026_P04_-_published.xlsx:2366",
-        "Over500_2026_P04_-_published.xlsx:2368",
-        "Over500_2026_P04_-_published.xlsx:2650",
-        "Over500_2026_P04_-_published.xlsx:2655",
-        "Over500_2026_P04_-_published.xlsx:2803",
-        "Over500_2026_P04_-_published.xlsx:2813",
-        "Over500_2026_P04_-_published.xlsx:933",
-        "Over500_2026_P04_-_published.xlsx:968"
+        "Over500_2026_P02_-_published.xlsx:2170",
+        "Over500_2026_P02_-_published.xlsx:2172",
+        "Over500_2026_P02_-_published.xlsx:2173",
+        "Over500_2026_P02_-_published.xlsx:2176",
+        "Over500_2026_P02_-_published.xlsx:2179",
+        "Over500_2026_P02_-_published.xlsx:2180",
+        "Over500_2026_P02_-_published.xlsx:2182",
+        "Over500_2026_P02_-_published.xlsx:2184",
+        "Over500_2026_P02_-_published.xlsx:2185",
+        "Over500_2026_P02_-_published.xlsx:2193",
+        "Over500_2026_P02_-_published.xlsx:692",
+        "Over500_2026_P02_-_published.xlsx:693",
+        "Over500_2026_P02_-_published.xlsx:694",
+        "Over500_2026_P02_-_published.xlsx:696",
+        "Over500_2026_P02_-_published.xlsx:697",
+        "Over500_2026_P02_-_published.xlsx:698",
+        "Over500_2026_P02_-_published.xlsx:699",
+        "Over500_2026_P02_-_published.xlsx:700",
+        "Over500_2026_P02_-_published.xlsx:701",
+        "Over500_2026_P02_-_published.xlsx:702",
+        "Over500_2026_P02_-_published.xlsx:703",
+        "Over500_2026_P02_-_published.xlsx:704",
+        "Over500_2026_P02_-_published.xlsx:705",
+        "Over500_2026_P02_-_published.xlsx:706",
+        "Over500_2026_P02_-_published.xlsx:707",
+        "Over500_2026_P02_-_published.xlsx:710",
+        "Over500_2026_P02_-_published.xlsx:711",
+        "Over500_2026_P02_-_published.xlsx:712",
+        "Over500_2026_P02_-_published.xlsx:714",
+        "Over500_2026_P02_-_published.xlsx:715",
+        "Over500_2026_P02_-_published.xlsx:716",
+        "Over500_2026_P02_-_published.xlsx:720",
+        "Over500_2026_P02_-_published.xlsx:721",
+        "Over500_2026_P02_-_published.xlsx:722",
+        "Over500_2026_P02_-_published.xlsx:724",
+        "Over500_2026_P02_-_published.xlsx:725",
+        "Over500_2026_P02_-_published.xlsx:726",
+        "Over500_2026_P02_-_published.xlsx:727",
+        "Over500_2026_P02_-_published.xlsx:728",
+        "Over500_2026_P02_-_published.xlsx:729",
+        "Over500_2026_P02_-_published.xlsx:730",
+        "Over500_2026_P02_-_published.xlsx:731",
+        "Over500_2026_P02_-_published.xlsx:734",
+        "Over500_2026_P03_-_published.xlsx:2117",
+        "Over500_2026_P03_-_published.xlsx:2133",
+        "Over500_2026_P03_-_published.xlsx:2402",
+        "Over500_2026_P03_-_published.xlsx:683",
+        "Over500_2026_P03_-_published.xlsx:699",
+        "Over500_2026_P03_-_published.xlsx:700",
+        "Over500_2026_P03_-_published.xlsx:701",
+        "Over500_2026_P03_-_published.xlsx:702",
+        "Over500_2026_P03_-_published.xlsx:703",
+        "Over500_2026_P03_-_published.xlsx:728",
+        "Over500_2026_P03_-_published.xlsx:729"
       ],
       "independent_check": {
-        "recomputed_pence": 3490442,
-        "trigger_pence": 100001
-      }
+        "recomputed_pence": 298655013,
+        "trigger_pence": 50000001
+      },
+      "workbook_row_checked": "Over500_2026_P02_-_published.xlsx:2170",
+      "workbook_row_matches": true
     },
     {
       "test": "high_value_suppliers",
@@ -201,7 +215,9 @@
       "independent_check": {
         "recomputed_pence": 737792221,
         "months": 3
-      }
+      },
+      "workbook_row_checked": "Over500_2026_P02_-_published.xlsx:691",
+      "workbook_row_matches": true
     },
     {
       "test": "duplicates",
@@ -247,7 +263,9 @@
       "independent_check": {
         "recomputed_excess_pence": 71181075,
         "tier": "different_time"
-      }
+      },
+      "workbook_row_checked": "Over500_2026_P03_-_published.xlsx:2164",
+      "workbook_row_matches": true
     },
     {
       "test": "off_contract",
@@ -383,7 +401,9 @@
       "independent_check": {
         "recomputed_pence": 737792221,
         "no_exact_active_notice": true
-      }
+      },
+      "workbook_row_checked": "Over500_2026_P02_-_published.xlsx:691",
+      "workbook_row_matches": true
     },
     {
       "test": "expired_notice_spend",
@@ -394,7 +414,9 @@
       "independent_check": {
         "recomputed_pence": 9130675,
         "all_exact_notices_ended": true
-      }
+      },
+      "workbook_row_checked": "Over500_2026_P03_-_published.xlsx:704",
+      "workbook_row_matches": true
     },
     {
       "test": "spend_vs_award",
@@ -414,7 +436,9 @@
       "independent_check": {
         "recomputed_ratio": "6.130330401443587581746834112",
         "notice_id": "RM6259/CL766"
-      }
+      },
+      "workbook_row_checked": "Over500_2026_P04_-_published.xlsx:427",
+      "workbook_row_matches": true
     }
   ],
   "unavailable_checks": []

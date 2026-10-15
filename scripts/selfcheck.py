@@ -16,7 +16,25 @@ def read(path):
         return list(csv.DictReader(stream))
 
 
-def run(analytics_path: Path, full: Path) -> dict:
+def workbook_cell_check(row_id: str, clean_row: dict, spend_dir: Path, cache: dict) -> bool:
+    """Open the source workbook with openpyxl (not pandas) and confirm supplier and amount at the sheet row."""
+    name, sheet_row = row_id.rsplit(":", 1)
+    if name not in cache:
+        import openpyxl
+        wb = openpyxl.load_workbook(spend_dir / name, read_only=True, data_only=True)
+        ws = wb["Data to publish"]
+        cache[name] = {i: r for i, r in enumerate(ws.iter_rows(values_only=True), 1)}
+        header_row = next(i for i, r in cache[name].items() if r and str(r[0]).strip() == "Service")
+        cache[name]["_cols"] = [str(v).strip() for v in cache[name][header_row]]
+    cols, values = cache[name]["_cols"], cache[name].get(int(sheet_row))
+    if values is None:
+        return False
+    cell = dict(zip(cols, values))
+    amount = Decimal(str(cell["Net amount"])).quantize(Decimal("0.01"))
+    return str(cell["Supplier name"]).strip() == clean_row["Supplier name"] and int(amount * 100) == int(clean_row["amount_pence"])
+
+
+def run(analytics_path: Path, full: Path, spend_dir: Path = Path("data/spend")) -> dict:
     summary = json.loads(analytics_path.read_text())
     rows = read(full / "spend-clean.csv")
     notices = read(full / "notices-clean.csv")
@@ -24,10 +42,15 @@ def run(analytics_path: Path, full: Path) -> dict:
     results = []
     months = summary["population"]["months_covered"]
 
-    def add(test, ok, ids, details):
-        results.append({"test": test, "passed": bool(ok), "row_ids": ids, "independent_check": details})
+    cache = {}
 
-    flags = read(full / "threshold-clustering.csv")
+    def add(test, ok, ids, details):
+        sheet = [i for i in ids if i in lookup][:1]
+        sheet_ok = all(workbook_cell_check(i, lookup[i], spend_dir, cache) for i in sheet) if spend_dir.exists() else None
+        results.append({"test": test, "passed": bool(ok) and sheet_ok is not False, "row_ids": ids, "independent_check": details,
+                        "workbook_row_checked": sheet[0] if sheet else None, "workbook_row_matches": sheet_ok})
+
+    flags = sorted(read(full / "threshold-clustering.csv"), key=lambda r: (-int(r["amount_pence"]), r["row_id"]))
     if flags:
         f = flags[0]
         r = lookup[f["row_id"]]
@@ -35,7 +58,8 @@ def run(analytics_path: Path, full: Path) -> dict:
         threshold = next(t for t in summary["thresholds"] if t["amount_pence"] == value)
         amount = int(r["amount_pence"])
         add("threshold_clustering", amount * 10 >= value * 9 and amount < threshold["effective_trigger_pence"], [r["row_id"]], {"amount_pence": amount, "threshold_pence": value})
-    flags = read(full / "split-purchases.csv")
+    flags = [r for r in read(full / "split-purchases.csv") if r["tag"] == "general_procurement"] or read(full / "split-purchases.csv")
+    flags.sort(key=lambda r: (-int(r["amount_pence"]), r["group_id"]))
     if flags:
         f = flags[0]
         start = date.fromisoformat(f["window_start"])
@@ -66,7 +90,7 @@ def run(analytics_path: Path, full: Path) -> dict:
         f = flags[0]
         selected = [r for r in rows if r["supplier_norm"] == f["supplier_norm"]]
         total = sum(int(r["amount_pence"]) for r in selected)
-        active = [n for n in notices if n["active"] == "True" and n["starts_after_window"] != "True"]
+        active = [n for n in notices if n["active"] == "True"]  # spec active set
         register = read(full / "register-clean.csv")
         active += [r for r in register if r.get("active") == "True"]
         exact = any(n["supplier_norm"] == f["supplier_norm"] for n in active)
@@ -87,7 +111,8 @@ def run(analytics_path: Path, full: Path) -> dict:
         total = sum(int(r["amount_pence"]) for r in rows if r["supplier_norm"] == f["supplier_norm"])
         ratio = Decimal(total) * 12 / months / (Decimal(notice["award_pence"]) * Decimal("365.25") / days)
         add("spend_vs_award", ratio >= Decimal("1.25") and abs(ratio - Decimal(f["ratio"])) <= Decimal("0.000001") and int(notice["suppliers_on_notice"]) == 1, f["row_ids"].split(";"), {"recomputed_ratio": str(ratio), "notice_id": f["notice_id"]})
-    payload = {"producer": "Codex preparation; independent Python arithmetic checks, not Claude Code verification", "passed": all(r["passed"] for r in results), "checks": results,
+    payload = {"producer": "scripts/selfcheck.py run by the Claude Code spend-analyst sub-agent; independent re-derivation from spend-clean.csv plus openpyxl workbook row check",
+               "passed": all(r["passed"] for r in results), "checks": results,
                "unavailable_checks": [name for name, item in summary["tests"].items() if item.get("skipped") or item.get("count", 0) == 0]}
     (full / "selfcheck.json").write_text(json.dumps(payload, indent=2) + "\n")
     return payload
@@ -97,10 +122,15 @@ def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--analytics", type=Path, default=Path("outputs/analytics.json"))
     p.add_argument("--full", type=Path, default=Path("outputs/analytics-full"))
+    p.add_argument("--spend", type=Path, default=Path("data/spend"))
     a = p.parse_args()
-    result = run(a.analytics, a.full)
+    result = run(a.analytics, a.full, a.spend)
     for check in result["checks"]:
-        print(f"{'PASS' if check['passed'] else 'FAIL'} {check['test']}: {len(check['row_ids'])} source rows independently reconciled; first row {check['row_ids'][0]}")
+        ids = check["row_ids"]
+        shown = ", ".join(ids[:4]) + (f" (+{len(ids) - 4} more)" if len(ids) > 4 else "")
+        print(f"{'PASS' if check['passed'] else 'FAIL'} {check['test']}: {len(ids)} rows re-derived [{shown}]; "
+              f"workbook row {check['workbook_row_checked']} matches={check['workbook_row_matches']}; {json.dumps(check['independent_check'])}")
+    print("unavailable:", result["unavailable_checks"])
     return 0 if result["passed"] else 1
 
 

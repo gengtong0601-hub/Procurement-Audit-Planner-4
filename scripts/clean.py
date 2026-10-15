@@ -24,12 +24,25 @@ DROP_TOKENS = {"LTD", "LIMITED", "PLC", "LLP", "LLC", "INC", "CIC", "CIO", "UK",
 BUYERS = {"West Berkshire Council", "West Berkshire"}
 PENSION_RE = r"LGPS|PENSION|SUPERANNUATION"
 AUTHORITY_RE = r"\b(COUNCIL|BOROUGH|COUNTY|CNCL|NHS|POLICE|FIRE AUTHORITY|FIRE AND RESCUE|HMRC|HM REVENUE|DEPARTMENT FOR|MINISTRY OF)\b"
+JOINT_RE = r"JOINT ARRANGEMENTS"
+# Tag regexes, applied case-insensitively to the stripped field; first match wins.
+PLACEMENT_SERVICE_RE = r"^(Adult Social Care|Children's Social Care|Education)"
+PLACEMENT_NARRATIVE_RE = r"Private Contractors|Other agencies|Voluntary Associations"  # full match
+GRANT_RE = r"GRANT"
+AGENCY_RE = r"AGENCY"
+# Spec pattern is RENT|RATES|WATER RATES|LEASE. Unbounded, RENT matches inside
+# "Equipment Rentals" (equipment hire, a procurement purchase), so word
+# boundaries are applied. Reversible: set PREMISES_RE = PREMISES_RE_SPEC.
+PREMISES_RE_SPEC = r"RENT|RATES|WATER RATES|LEASE"
+PREMISES_RE = r"\bRENTS?\b|\bRATES\b|\bWATER RATES\b|\bLEASE\b"
 TAG_RULES = {
-    "care_or_education_placement": "Service ^(Adult Social Care|Children's Social Care|Education); Narrative ^(Private Contractors|Other agencies|Voluntary Associations)$",
-    "grant": "Narrative GRANT",
-    "agency_staff": "Narrative AGENCY",
-    "premises_non_procurement": "Narrative RENT|RATES|WATER RATES|LEASE",
-    "general_procurement": "otherwise; first match wins",
+    "care_or_education_placement": {"service_regex": PLACEMENT_SERVICE_RE, "narrative_fullmatch": PLACEMENT_NARRATIVE_RE},
+    "grant": {"narrative_regex": GRANT_RE},
+    "agency_staff": {"narrative_regex": AGENCY_RE},
+    "premises_non_procurement": {"narrative_regex": PREMISES_RE, "spec_regex": PREMISES_RE_SPEC,
+                                 "correction": "word boundaries added: unbounded RENT matched 'Equipment Rentals' (equipment hire)"},
+    "general_procurement": {"rule": "otherwise"},
+    "order": "first match wins in the order listed; matching is case-insensitive on stripped values",
 }
 NOTICE_CAVEAT = (
     'contracts.csv holds published *notices*, not a contract register. It holds '
@@ -117,10 +130,10 @@ def parse_published(value: str, context: str) -> str:
 
 
 def tag_spend(row: dict) -> str:
-    service, narrative = row["Service"], row["Narrative"]
-    if re.search(r"^(Adult Social Care|Children's Social Care|Education)", service, re.I) and re.fullmatch(r"Private Contractors|Other agencies|Voluntary Associations", narrative, re.I):
+    service, narrative = row["Service"].strip(), row["Narrative"].strip()
+    if re.search(PLACEMENT_SERVICE_RE, service, re.I) and re.fullmatch(PLACEMENT_NARRATIVE_RE, narrative, re.I):
         return "care_or_education_placement"
-    for tag, pattern in (("grant", r"GRANT"), ("agency_staff", r"AGENCY"), ("premises_non_procurement", r"RENT|RATES|WATER RATES|LEASE")):
+    for tag, pattern in (("grant", GRANT_RE), ("agency_staff", AGENCY_RE), ("premises_non_procurement", PREMISES_RE)):
         if re.search(pattern, narrative, re.I):
             return tag
     return "general_procurement"
@@ -131,9 +144,24 @@ def exclusion_for(row: dict) -> str:
         return "redacted_supplier"
     if re.search(PENSION_RE, row["Narrative"], re.I):
         return "pension_statutory"
-    if (re.search(AUTHORITY_RE, row["Supplier name"], re.I) or re.search("JOINT ARRANGEMENTS", row["Narrative"], re.I)) and row["Narrative"].strip().casefold() != "private contractors":
+    if (re.search(AUTHORITY_RE, row["Supplier name"], re.I) or re.search(JOINT_RE, row["Narrative"], re.I)) and row["Narrative"].strip().casefold() != "private contractors":
         return "inter_authority"
     return ""
+
+
+def exclusion_review(excluded: list[dict], kept: list[dict]) -> dict:
+    """Name-level review lists so the auditor can reverse a regex false positive."""
+    inter = Counter(r["Supplier name"] for r in excluded if r["exclusion"] == "inter_authority")
+    joint_only = Counter(r["Narrative"] for r in excluded if r["exclusion"] == "inter_authority"
+                         and not re.search(AUTHORITY_RE, r["Supplier name"], re.I))
+    pension = Counter(r["Narrative"] for r in excluded if r["exclusion"] == "pension_statutory")
+    spec_only = Counter(r["Narrative"] for r in kept + excluded
+                        if re.search(PREMISES_RE_SPEC, r["Narrative"], re.I) and not re.search(PREMISES_RE, r["Narrative"], re.I))
+    return {"inter_authority_supplier_names": dict(sorted(inter.items())),
+            "inter_authority_by_narrative_only": dict(sorted(joint_only.items())),
+            "pension_statutory_narratives": dict(sorted(pension.items())),
+            "premises_regex_correction_narratives": dict(sorted(spec_only.items())),
+            "note": "Counts are rows. Review names for regex false positives; any reversal is made by editing the named regex in scripts/clean.py."}
 
 
 def write_csv(path: Path, rows: list[dict], fields: list[str] | None = None) -> None:
@@ -213,8 +241,12 @@ def load_spend(data: Path) -> tuple[list[dict], list[dict], dict]:
     log = {"files": profiles, "rows_raw": len(kept) + len(excluded), "rows_after_exclusions": len(kept),
            "raw_total_pence": sum(r["amount_pence"] for r in kept + excluded), "total_pence": sum(r["amount_pence"] for r in kept),
            "date_min": min(all_dates), "date_max": max(all_dates), "months_covered": len(months), "months": months,
-           "excluded": exclusions, "tag_rules": TAG_RULES, "exclusion_regexes": {"pension": PENSION_RE, "inter_authority": AUTHORITY_RE},
-           "warnings": [], "provenance": "Prepared by Codex; Claude Code agent execution and human approval pending."}
+           "excluded": exclusions, "tag_rules": TAG_RULES,
+           "exclusion_regexes": {"redacted_supplier": "Supplier name equals 'Redacted' (case-insensitive)", "pension_statutory": PENSION_RE,
+                                 "inter_authority_supplier": AUTHORITY_RE, "inter_authority_narrative": JOINT_RE,
+                                 "inter_authority_unless_narrative": "Private Contractors"},
+           "exclusion_review": exclusion_review(excluded, kept),
+           "warnings": [], "provenance": "scripts/clean.py run by the Claude Code spend-analyst sub-agent; human approval pending."}
     if len(months) != (int(max(months)[:4]) - int(min(months)[:4])) * 12 + int(max(months)[5:]) - int(min(months)[5:]) + 1:
         log["warnings"].append("Spend calendar months have gaps; annualisation is an estimate based on distinct observed months.")
     return kept, excluded, log
@@ -294,14 +326,24 @@ def load_notices(data: Path, start: str, end: str) -> tuple[list[dict], dict]:
                 "published_range": [min(dates), max(dates)] if dates else [], "active_definition": "End date on/after spend window start, or blank end date (guide's notice-coverage proxy).",
                 "starts_after_window": len({r["notice_id"] for r in pairs if r["starts_after_window"]})})
     if log["starts_after_window"]:
-        log["warnings"].append("Some end-date-active notices start after the spend window. Listed for traceability; these future notices are excluded from matching and spend-vs-award.")
+        log["warnings"].append(f"{log['starts_after_window']} active notice(s) start after the spend window ends. They stay in the matching set (active = end date on/after window start or blank) "
+                               "but are not 'live' for spend_vs_award.")
     if len(raw) == 1000:
         log["warnings"].append("Exactly 1,000 exported rows: source may have hit Contracts Finder export cap.")
     if years:
-        all_years = range(int(min(years)), int(max(years)) + 1)
-        thin = [str(y) for y in all_years if years.get(str(y), 0) < 3]
+        log["thin_year_rule"] = "a publication year (kept notices) below half the median across years in the published range"
+        all_years = [str(y) for y in range(int(min(years)), int(max(years)) + 1)]
+        counts = sorted(years.get(y, 0) for y in all_years)
+        middle = len(counts) // 2
+        median = Decimal(counts[middle]) if len(counts) % 2 else (Decimal(counts[middle - 1]) + Decimal(counts[middle])) / 2
+        log["median_notices_per_year"] = float(median)
+        thin = [y for y in all_years if Decimal(years.get(y, 0)) * 2 < median]
+        log["thin_years"] = {y: years.get(y, 0) for y in thin}
         if thin:
-            log["warnings"].append(f"Publication years with fewer than 3 kept notices: {', '.join(thin)}; completeness review required. This heuristic does not establish missing notices.")
+            log["warnings"].append(f"Publication years with kept notices below half the median ({float(median)}) per year: "
+                                   + ", ".join(f"{y}={years.get(y, 0)}" for y in thin)
+                                   + f". Published range is {min(dates)} to {max(dates)}, so first/last years may be partial; "
+                                     "a thin year may also mean notices published elsewhere or an export limit. Completeness review required.")
     return pairs, log
 
 

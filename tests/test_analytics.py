@@ -11,7 +11,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 from clean import (EXPECTED, InputError, clean, exclusion_for, is_council_buyer, load_notices, load_spend,
                    normalise_supplier, parse_notice_date, parse_spend_date, tag_spend,
                    to_pence, unpack_suppliers, write_csv)
-from analyse import (duplicate_groups, expired_notice_spend, high_value_suppliers,
+from analyse import (duplicate_groups, expired_notice_spend, high_value_suppliers, live_notices, matching_set,
                      load_rules, match_supplier, off_contract, publication_threshold,
                      spend_vs_award, split_purchases, supplier_totals,
                      threshold_clustering)
@@ -61,6 +61,24 @@ class CleaningTests(unittest.TestCase):
         self.assertEqual(exclusion_for({"Supplier name": "Provider", "Narrative": "LGPS contributions"}), "pension_statutory")
         self.assertEqual(tag_spend({"Service": "Corporate", "Narrative": "Grant"}), "grant")
         self.assertEqual(tag_spend({"Service": "Adult Social Care East", "Narrative": "Private Contractors"}), "care_or_education_placement")
+
+    def test_premises_regex_word_bounded_so_equipment_rentals_stay_procurement(self):
+        for narrative in ("Rents", "Rent Rebates", "Water Rates", "Lease car costs re employees"):
+            self.assertEqual(tag_spend({"Service": "Corporate", "Narrative": narrative}), "premises_non_procurement", narrative)
+        self.assertEqual(tag_spend({"Service": "Corporate", "Narrative": "Equipment Rentals"}), "general_procurement")
+        self.assertEqual(tag_spend({"Service": "Corporate", "Narrative": "Corporate R&M"}), "general_procurement")
+
+    def test_thin_publication_year_warning_is_relative_to_median(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            data = Path(tmp)
+            source = {"Organisation Name": "West Berkshire Council", "Title": "T", "Contract start date": "01/01/2025", "Contract end date": "",
+                      "Awarded Date": "01/01/2025", "Awarded Value": "0", "OJEU Procedure Type": "Open", "Supplier": "[Acme Ltd|Address|NONE||No|No]"}
+            records = [{**source, "Notice Identifier": f"a{i}", "Published Date": "2024-01-01T00:00:00Z"} for i in range(20)]
+            records += [{**source, "Notice Identifier": f"b{i}", "Published Date": "2025-01-01T00:00:00Z"} for i in range(4)]
+            write_csv(data / "contracts.csv", records)
+            _, log = load_notices(data, "2026-05-01", "2026-07-31")
+            self.assertEqual(log["thin_years"], {"2025": 4})
+            self.assertTrue(any("below half the median" in w for w in log["warnings"]))
 
     def test_header_location_row_provenance_and_fail_closed(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -145,6 +163,26 @@ class IndicatorTests(unittest.TestCase):
         active[0]["company_number"] = "00123456"
         self.assertEqual(match_supplier("UNRELATED NAME", "00123456", active, {"UNRELATED NAME"})["match_class"], "exact")
         self.assertEqual(match_supplier("CARE SERVICES", "", [notice(supplier="HEALTH SERVICES")], {"CARE SERVICES"})["match_class"], "none")
+
+    def test_matching_uses_spec_active_set_but_award_ratio_uses_live_notices(self):
+        future = {**notice("FUT"), "starts_after_window": True}
+        ended = notice("OLD", active=False)
+        current = notice("NOW")
+        self.assertEqual({n["notice_id"] for n in matching_set([future, ended, current], [], True)}, {"FUT", "NOW"})
+        self.assertEqual(matching_set([future, current], [], False), [])
+        self.assertEqual({n["notice_id"] for n in live_notices([future, ended, current])}, {"NOW"})
+
+    def test_high_value_tiers_and_match_class_only_above_publication_floor(self):
+        suppliers = supplier_totals([payment("a", 30000, supplier="BIG"), payment("b", 15000, supplier="MID")], 12)
+        matches = {"BIG": {"match_class": "none"}, "MID": {"match_class": "exact"}}
+        publication = {"amount_pence": 25000, "inclusive": True, "rule_ids": ["PUB"]}
+        with tempfile.TemporaryDirectory() as tmp:
+            output, rows = high_value_suppliers(suppliers, [threshold(10000), threshold(25000)], 12, Path(tmp), matches, publication)
+            self.assertEqual(output["count"], 2)
+            self.assertEqual([t["count"] for t in output["tiers"]], [2, 1])
+            classes = {r["supplier_norm"]: r["match_class"] for r in rows}
+            self.assertEqual(classes, {"BIG": "none", "MID": "not_classed_below_publication_threshold"})
+            self.assertEqual({r["supplier_norm"]: r["tiers_met_gbp"] for r in rows}, {"BIG": [100.0, 250.0], "MID": [100.0]})
 
     def test_threshold_band_inclusive_boundary(self):
         rows = [payment("a", 8999), payment("b", 9000), payment("c", 9999), payment("d", 10000), payment("e", 11000)]
