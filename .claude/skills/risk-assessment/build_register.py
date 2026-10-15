@@ -49,6 +49,20 @@ def history_index(obj, result=None):
     return result
 
 
+def scale_aliases(history, index):
+    """Citable IDs for council scale entries: [history:IMPACT-3], [history:LIKELIHOOD-2]."""
+    method = history.get('scoring_method', {})
+    for key, prefix in (('likelihood_scale', 'LIKELIHOOD'), ('impact_scale', 'IMPACT')):
+        for entry in method.get(key, []) if isinstance(method.get(key), list) else []:
+            if not isinstance(entry, dict) or 'id' in entry or type(entry.get('score')) is not int:
+                continue
+            alias = f'{prefix}-{entry["score"]}'
+            if alias in index:
+                raise ValueError('duplicate history id: ' + alias)
+            index[alias] = entry
+    return index
+
+
 def decisions(path):
     out = {'reviewer': '', 'date': '', 'rows': OrderedDict()}
     if not path.exists():
@@ -77,6 +91,15 @@ def fmt(value):
 
 def matrix_label(method, likelihood, impact):
     """Accept explicit matrix rows or cells, never infer council cells from products."""
+    for row in method.get('combination', {}).get('matrix_rows', []):
+        if not isinstance(row, dict) or row.get('impact') != impact:
+            continue
+        for cell in row.get('cells', []):
+            if isinstance(cell, dict) and cell.get('likelihood') == likelihood:
+                printed = cell.get('score_printed')
+                if printed is not None and printed != likelihood * impact:
+                    raise ValueError(f'council matrix prints {printed} for likelihood={likelihood}, impact={impact}, not their product')
+                return cell.get('label')
     matrix = method.get('matrix', method.get('combination', {}).get('matrix', []))
     cells = matrix.get('cells', matrix.get('rows', [])) if isinstance(matrix, dict) else matrix
     for cell in cells:
@@ -97,15 +120,32 @@ def compute_rating(method, likelihood, impact):
     label = matrix_label(method, likelihood, impact)
     band = None
     for row in method.get('bands', []):
-        lo = row.get('min_score', row.get('score_min', row.get('min')))
-        hi = row.get('max_score', row.get('score_max', row.get('max')))
-        if isinstance(lo, (int, float)) and isinstance(hi, (int, float)) and lo <= score <= hi:
+        lo = row.get('min_score', row.get('score_min', row.get('min', row.get('score_low'))))
+        hi = row.get('max_score', row.get('score_max', row.get('max', row.get('score_high'))))
+        # A null bound is open-ended ("Up to 3"); a band needs at least one numeric bound.
+        bounded = all(b is None or isinstance(b, (int, float)) for b in (lo, hi)) and (lo, hi) != (None, None)
+        if bounded and (lo is None or lo <= score) and (hi is None or score <= hi):
             if band is not None:
                 raise ValueError('overlapping selected risk bands')
             band = row.get('label', row.get('name', row.get('band', row.get('level'))))
     if not label or not band:
         raise ValueError(f'usable council method lacks explicit matrix cell/band for likelihood={likelihood}, impact={impact}')
-    return score, label, band, method.get('selection_note', 'Council matrix labels and selected Table 4 score bands are reported separately; any discrepancy must be disclosed in history.json.')
+    return score, label, band, method.get('selection_note') or selection_note(method)
+
+
+def selection_note(method):
+    """State which council threshold set the Band column uses and which conflicting one it does not."""
+    bands = [b for b in method.get('bands', []) if isinstance(b, dict)]
+    where = lambda x: ', '.join(str(p) for p in (x.get('section'), x.get('pdf_page') and f"p.{x['pdf_page']}") if p)
+    shown = '; '.join(f"{b.get('level', b.get('label', b.get('name', '?')))} {b.get('score_range', '')}".strip() for b in bands)
+    note = f"Band column uses the council's response bands ({where(bands[0]) if bands else 'history.json'}): {shown}. Matrix labels are reported separately."
+    crr = method.get('corporate_register_threshold')
+    if isinstance(crr, dict) and crr.get('rule_text'):
+        note += f" Not used for banding: {where(crr)} gives a different Corporate Risk Register entry point (\"{crr['rule_text']}\")."
+    ids = [d.get('discrepancy_id', d.get('id')) for d in method.get('discrepancies', []) if isinstance(d, dict)]
+    if any(ids):
+        note += ' Scoring-method discrepancies recorded in history.json, not resolved here: ' + ', '.join(i for i in ids if i) + '.'
+    return note
 
 
 def validate(risk, rule_ids, analytics, histories):
@@ -251,7 +291,7 @@ def run(a):
     if not analytics:
         raise ValueError('analytics must not be empty')
     rules_by_id = {r['rule_id']: r for r in rules['rules']}
-    histories = history_index(history)
+    histories = scale_aliases(history, history_index(history))
     comments = out / 'auditor-comments.md'
     dec = decisions(comments)
     kept, failures, warnings, computed = [], [], [], {}

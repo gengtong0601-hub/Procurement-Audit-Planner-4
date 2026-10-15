@@ -1,0 +1,2 @@
+$ .venv/bin/python -m pytest -q --basetemp runtime/test-temp
+48 passed in 27.07s

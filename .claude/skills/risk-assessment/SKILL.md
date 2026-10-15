@@ -46,19 +46,28 @@ raises the baseline likelihood by one, capped at five; cite that audit, record
 
 Assign impact using the council's sourced impact descriptors. Do not treat
 spend totals as proven loss. Explain which descriptor and evidence support the
-score; acknowledge unavailable consequence data. Score one through five.
+score, citing it as `[history:IMPACT-n]`; acknowledge unavailable consequence
+data. Score one through five.
 
-Use the explicit `history.scoring_method.combination.matrix` cells and Table 4
-bands, not an invented product-to-label mapping. `build_register.py` reports the
-matrix label and score band separately. Preserve the Table 4 / Figure 4 corporate
-register threshold conflict in the header using `selection_note`. If no usable
-method is recorded, the builder discloses its fallback scales and bands.
+The builder takes matrix labels from the council's explicit matrix
+(`history.scoring_method.combination.matrix_rows[].cells[]`, or `combination.matrix`
+cells in older files) and the Band column from `scoring_method.bands`
+(`score_low`/`score_high`; a null bound is open-ended, e.g. "Up to 3"). It never
+infers a label from the product, and it stops if a printed cell score differs from
+likelihood × impact. Its register header states which threshold set the Band column
+uses, names the conflicting Corporate Risk Register entry point it does not use, and
+lists the scoring-method discrepancy IDs. A `selection_note` in history.json overrides
+that generated text. If no usable method is recorded, the builder discloses its
+fallback scales and bands.
 
 ## Step 3: Citation and numeric syntax
 
 - `[rule:CPR-01]` resolves to an existing rule ID.
 - `[metric:$.tests.duplicates.count]` resolves to a scalar current metric.
 - `[history:AUD-01]` resolves to an item with that ID in history.json.
+- `[history:IMPACT-3]` and `[history:LIKELIHOOD-2]` resolve to the council scale
+  entry with that score in `history.scoring_method` (aliases the builder derives,
+  because scale entries carry no `id`). Cite these for impact and likelihood descriptors.
 - `{{$.tests.duplicates.count}}` is filled by Python; never type that count.
 - Score fields, IDs and sample source paths are structural data, not prose.
 - Never put supplier names in titles, statements, justifications or focus.

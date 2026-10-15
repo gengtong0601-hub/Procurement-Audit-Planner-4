@@ -1,0 +1,7 @@
+$ .venv/bin/python .claude/skills/risk-assessment/build_register.py <fixture>/risk-ratings.json --out-dir <fixture>   # real rules/analytics/history
+FAIL R-02: likelihood: requires at least one resolved citation
+FAIL R-02: impact: unresolved citation [history:IMPACT-9]
+FAIL R-02: impact: unresolved citation [rule:CPR-999]
+FAIL R-02: impact: requires at least one resolved citation
+SUMMARY risks kept: 1, excluded by validation: 1, failures=4, warnings=0, gate=open
+exit=1 (expected: one risk excluded)

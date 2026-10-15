@@ -154,6 +154,45 @@ class GateTests(unittest.TestCase):
         self.put('analytics.json', {'count': 999})
         self.assertNotEqual(self.gate().returncode, 0)
 
+    def council_history(self):
+        label = lambda s: 'Extreme' if s >= 15 else 'High' if s >= 8 else 'Moderate' if s >= 4 else 'Low'
+        rows = [{'impact': i, 'cells': [{'likelihood': l, 'score_printed': l * i, 'label': label(l * i)} for l in range(1, 6)]}
+                for i in range(5, 0, -1)]
+        bands = [('Extreme', 15, 25), ('Medium - High', 8, 12), ('Moderate', 4, 6), ('Low', None, 3)]
+        return {'scoring_method': {
+            'usable': True,
+            'likelihood_scale': [{'score': n, 'label': f'L{n}', 'source': 'strategy.pdf', 'pdf_page': 15} for n in range(5, 0, -1)],
+            'impact_scale': [{'score': n, 'label': f'I{n}', 'source': 'strategy.pdf', 'pdf_page': 14} for n in range(5, 0, -1)],
+            'combination': {'matrix_rows': rows},
+            'bands': [{'level': name, 'score_range': f'{lo or "up to"}-{hi}', 'score_low': lo, 'score_high': hi,
+                       'section': 'Table 4', 'pdf_page': 19} for name, lo, hi in bands],
+            'corporate_register_threshold': {'section': 'Figure 4', 'pdf_page': 21, 'rule_text': 'Score 9 or above'},
+            'discrepancies': [{'discrepancy_id': 'DIS-01', 'item': 'register entry point'}]},
+            'discrepancies': [{'id': 'DIS-01', 'item': 'register entry point'}]}
+
+    def test_council_matrix_rows_open_band_and_scale_alias(self):
+        self.put('history.json', self.council_history())
+        self.ratings['risks'][0]['impact']['justification'] += ' [history:IMPACT-3]'
+        low = copy.deepcopy(self.ratings['risks'][0]); low['id'] = 'R-02'; low['likelihood']['score'] = 1
+        self.ratings['risks'].append(low)
+        self.put('risk-ratings.json', self.ratings)
+        result = self.build()
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        register = (self.out / 'risk-register.md').read_text()
+        self.assertIn('| R-01 | Synthetic risk fixture | 2 | 3 | 6 | Moderate | Moderate |', register)
+        self.assertIn('| R-02 | Synthetic risk fixture | 1 | 3 | 3 | Low | Low |', register)  # open "up to 3" band
+        self.assertIn('Not used for banding: Figure 4, p.21', register)
+        self.assertIn('not resolved here: DIS-01', register)
+        self.assertIn('[history:IMPACT-3] strategy.pdf; page 14', register)
+
+    def test_misprinted_council_matrix_cell_blocks(self):
+        history = self.council_history()
+        history['scoring_method']['combination']['matrix_rows'][2]['cells'][1]['score_printed'] = 7  # impact 3, likelihood 2
+        self.put('history.json', history)
+        result = self.build()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('not their product', result.stdout)
+
     def test_adverse_uplift_requires_adverse_audit(self):
         self.ratings['risks'][0]['repeat_finding'] = {'history_id': 'AUD-01', 'base_likelihood': 1}
         self.ratings['risks'][0]['likelihood']['justification'] += ' [history:AUD-01]'

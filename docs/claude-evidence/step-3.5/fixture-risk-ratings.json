@@ -1,0 +1,37 @@
+{
+ "risks": [
+  {
+   "id": "R-01",
+   "title": "Related requirements may not have been aggregated",
+   "statement": "Recurring payments within a window warrant an aggregation review.",
+   "likelihood": {
+    "score": 3,
+    "justification": "{{$.tests.split_purchases.tiers[1].by_tag.general_procurement.rows}} general-procurement windows recur under the no-splitting rule [metric:$.tests.split_purchases.tiers[1].by_tag.general_procurement.rows] [rule:CPR-12]."
+   },
+   "impact": {
+    "score": 3,
+    "justification": "A missed route fits the council's Medium descriptor [history:IMPACT-3] [rule:CPR-69]."
+   },
+   "proposed_focus": "Confirm which payments belong to one requirement.",
+   "recommend_in_scope": true,
+   "sample_source": "split-purchases.csv"
+  },
+  {
+   "id": "R-02",
+   "title": "Broken fixture risk",
+   "statement": "Recurring payments within a window warrant an aggregation review.",
+   "likelihood": {
+    "score": 3,
+    "justification": "No citation at all."
+   },
+   "impact": {
+    "score": 3,
+    "justification": "Unsupported claim [history:IMPACT-9] [rule:CPR-999]."
+   },
+   "proposed_focus": "Confirm which payments belong to one requirement.",
+   "recommend_in_scope": true,
+   "sample_source": "split-purchases.csv"
+  }
+ ],
+ "excluded": []
+}
