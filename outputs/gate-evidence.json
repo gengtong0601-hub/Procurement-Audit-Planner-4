@@ -2,12 +2,12 @@
   "ready": false,
   "revision": null,
   "sha256": {
-    "risk-ratings.json": "aa40056731d3f85a293318fb266c05671a67fe82613e283b1ab1787be8bfa8ee",
-    "risk-register.md": "41b1e620ca2bae48e23eb8da03d874bef8434c4bc1e848acea55b0506a580273",
-    "auditor-comments.md": "c9474fd73569a4eca0b9ad6a6794b918c0a0919960facd56ad3ba55af4041aeb",
-    "rules.json": "3b3614cef0d6fabf7a99c25d00556f423c1148963e5367736073900e004626f5",
-    "analytics.json": "569b2b619ba5d315c3cfa001ca1eea626a0ba1e82173ee525dc7bcab4d528d6d",
-    "history.json": "077b6e2a15f5e4b2c7ea6e743175927ab93dacf3d8fba1ed3a678b078c09190d"
+    "risk-ratings.json": "fc09632c528c1187e082414193a13a2d0f27a9dc55d006e4097803cbaf62a4f8",
+    "risk-register.md": "2746f6141dac8100dcc2f8f7dd5ef3d5f7350f6275a0109f98ed338481f25539",
+    "auditor-comments.md": "4403e2f635abce22b558c181b1f903af20d9a1082166f30795a42ccaf9c30fc1",
+    "rules.json": "e7391cad3b9c4b50e831aa781f3daaf583b845cd3bb6238805d3b96379e911d5",
+    "analytics.json": "cef8d3668cd55040f30f7992c6285a140fd240eaaa58a1c61ddb27d420ada2fb",
+    "history.json": "a06e6d19ecd8f5a46d570da2ef6f893cbf927755074442aa31d068d98aaf1860"
   },
   "reason": "Risk validation or human decisions incomplete"
 }

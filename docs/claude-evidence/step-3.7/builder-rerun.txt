@@ -1,0 +1,10 @@
+$ .venv/bin/python .claude/skills/risk-assessment/build_register.py outputs/risk-ratings.json   # rerun by main session
+SUMMARY risks kept: 9, excluded by validation: 0, failures=0, warnings=0, gate=open
+exit=0
+
+rerun is byte-identical:
+outputs/risk-ratings.json: OK
+outputs/risk-register.md: OK
+outputs/auditor-comments.md: OK
+outputs/risk-baseline.json: OK
+outputs/gate-evidence.json: OK

@@ -1,0 +1,15 @@
+$ python -I docs/claude-evidence/step-3.7/supplier_name_check.py .
+supplier names checked: 1926
+text fields checked: 56
+HIT  R-04.impact.justification: BEYOND
+HIT  R-06.impact.justification: BEYOND
+HIT  R-09.impact.justification: CHOICE
+HIT  R-09.impact.justification: OFSTED
+HIT  R-09.likelihood.justification: CHOICE
+HIT  R-09.proposed_focus: CHOICE
+HIT  R-09.statement: CHOICE
+HIT  risk-register.md (excluding rule quotes): BEYOND
+HIT  risk-register.md (excluding rule quotes): CHOICE
+HIT  risk-register.md (excluding rule quotes): OFSTED
+SUMMARY supplier-name hits=10
+exit=1
