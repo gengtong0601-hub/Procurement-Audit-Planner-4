@@ -14,7 +14,7 @@ to investigate**, never wrongdoing by the council, a service or a supplier.
 | Part | Deliverable | Status |
 |---|---|---|
 | A | GitHub repository with this README | All 27 guide items completed in Claude Code (see [confirmation](#guide-completion-confirmation)). Repository: https://github.com/gengtong0601-hub/Procurement-Audit-Planner-4 |
-| B | Deployed independent harness | Implemented in `harness/`; not yet deployed (see [Part B](#part-b-independent-harness)). Deployed URL: _to be added_ |
+| B | Deployed independent harness | Live at https://procurement-audit-studio-8xno.onrender.com (prepared mode; [hosted end-to-end check](docs/claude-evidence/part-b/README.md)) |
 
 ---
 
@@ -176,12 +176,14 @@ builds and validates every output; an optional Claude Messages API provider supp
 agent judgments in live mode. Reviewer decisions and sign-off come only from the person using
 it. See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for running, deploying and the smoke test.
 
-Status: implemented and runnable locally, **not yet deployed**. The prepared-evidence mode was
+Status: **deployed** at https://procurement-audit-studio-8xno.onrender.com (Render free plan; the
+first request after idle can take about a minute). A hosted end-to-end run passed: start, register,
+decisions, planning, QA 4/4, sign-off and download ([evidence](docs/claude-evidence/part-b/README.md)).
+The prepared-evidence mode was
 fixed for the signed-off outputs in two ways. Each run now starts from the pre-decision judgments,
 because the root revision block is dropped in the run's own copy. A risk that cites no rule
 (R-04) is paired, as a labelled teaching baseline, with the clause the native planner chose
-(10.1). All 48 tests pass. The deployed URL will be added above once the hosted end-to-end run
-passes.
+(10.1). All 48 tests pass.
 
 ## Repository layout
 

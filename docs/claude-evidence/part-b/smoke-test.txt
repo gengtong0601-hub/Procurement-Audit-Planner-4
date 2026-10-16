@@ -1,0 +1,17 @@
+$ python docs/claude-evidence/part-b/smoke_online.py https://procurement-audit-studio-8xno.onrender.com   # 2026-10-15
+health: {'status': 'ok'}
+config: {'live_available': False, 'missing': [], 'prepared_available': True}
+start prepared run: HTTP 202
+stage: risk-review | error: 
+risks to decide: ['R-01', 'R-02', 'R-03', 'R-04', 'R-05', 'R-06', 'R-07', 'R-08', 'R-09']
+decisions: HTTP 200
+plan: HTTP 202
+stage after planning: sign-off | error: 
+review verdict line: ['VERDICT: READY FOR SIGN-OFF (4/4 checks pass)', 'READY FOR SIGN-OFF']
+  planning-memo.md: HTTP 200, 4066 chars
+  risk-control-matrix.md: HTTP 200, 2476 chars
+  audit-program.md: HTTP 200, 9347 chars
+  challenges.md: HTTP 200, 427 chars
+signoff: HTTP 200
+final stage: complete
+download: HTTP 200, 905632 bytes, application/zip
