@@ -226,6 +226,30 @@ def apply_decisions(run, payload):
 # rule the native planner chose for the same risk.
 PREPARED_RULE_FOR_SOURCE = {'duplicates.csv': '10.1'}
 
+# Prepared mode only: a standard sample recipe per analytics source, for risks whose judgments
+# carry no `prepared_sample` (the risk-assessment skill does not write one). The builder draws the
+# rows; `n` is set from the risk score below. These mirror the recipes the native planner used.
+_GP = 'general_procurement'
+PREPARED_SAMPLE_FOR_SOURCE = {
+    'threshold-clustering.csv': {'kind': 'rows', 'source': 'threshold-clustering.csv', 'where': {'tag': _GP, 'threshold': 25000},
+                                 'order_by': 'amount_pence', 'descending': True, 'distinct_by': 'supplier_norm'},
+    'split-purchases.csv': {'kind': 'groups', 'source': 'split-purchases.csv', 'where': {'tag': _GP, 'threshold': 25000},
+                            'order_by': 'total_gbp', 'descending': True, 'distinct_by': 'supplier_norm', 'per_group_n': 5,
+                            'key': 'window_id', 'ids_column': 'row_ids'},
+    'off-contract.csv': {'kind': 'suppliers', 'source': 'off-contract-unmatched.csv', 'where': {'dominant_tag': _GP, 'match_class': 'none'},
+                         'where_min': {'annualised_estimate_gbp': 25000}, 'order_by': 'annualised_estimate_gbp', 'descending': True,
+                         'per_group_n': 3},
+    'duplicates.csv': {'kind': 'groups', 'source': 'duplicates.csv', 'where': {'tag': _GP, 'tier': 'different_time'},
+                       'order_by': 'excess_gbp', 'descending': True, 'distinct_by': 'supplier_norm', 'key': 'group_id', 'ids_column': 'row_ids'},
+    'expired-notice-spend.csv': {'kind': 'suppliers', 'source': 'expired-notice-spend.csv', 'where': {'dominant_tag': _GP},
+                                 'order_by': 'total_gbp', 'descending': True, 'per_group_n': 3},
+    'spend-vs-award.csv': {'kind': 'suppliers', 'source': 'spend-vs-award.csv', 'where': {'dominant_tag': _GP},
+                           'order_by': 'ratio', 'descending': True, 'per_group_n': 3},
+    'high-value-suppliers.csv': {'kind': 'suppliers', 'source': 'high-value-suppliers.csv', 'where': {'dominant_tag': _GP},
+                                 'where_min': {'annualised_estimate_gbp': 500000}, 'order_by': 'annualised_estimate_gbp',
+                                 'descending': True, 'per_group_n': 3},
+}
+
 
 def prepared_plan(run):
     """Transparent rule-based teaching baseline; never represented as a live agent."""
@@ -250,7 +274,8 @@ def prepared_plan(run):
         num = r['id'].split('-')[1]
         control, test = 'C-' + num + '.1', 'T-' + num + '.1'
         n = 10 if r['likelihood']['score'] * r['impact']['score'] >= 9 else 5
-        recipe = copy.deepcopy(r.get('prepared_sample', {'kind': 'none', 'note': 'Inspect the named council records; no public transaction sample supports this control.'}))
+        recipe = copy.deepcopy(r.get('prepared_sample') or PREPARED_SAMPLE_FOR_SOURCE.get(r.get('sample_source'))
+                               or {'kind': 'none', 'note': 'Inspect the named council records; no public transaction sample supports this control.'})
         if recipe['kind'] != 'none':
             recipe['n'] = n
         risks.append({'id': r['id'], 'objective': r['proposed_focus'],

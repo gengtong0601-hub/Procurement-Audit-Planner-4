@@ -55,3 +55,7 @@ Harness prepared mode, after the Claude Code run (2026-10-15):
   prepared demo plan pairs its control with a fixed clause per sample source
   (`PREPARED_RULE_FOR_SOURCE`, currently duplicates → clause 10.1, as the native planner chose).
   The control text labels this as a teaching baseline for the reviewer to confirm.
+- Risks whose judgments carry no `prepared_sample` (the risk-assessment skill does not write one)
+  get a standard sample recipe per analytics source (`PREPARED_SAMPLE_FOR_SOURCE`), mirroring the
+  native planner's recipes. As a result the prepared demo draws real transactions (123 in a local
+  all-approve run) instead of document-only tests.
