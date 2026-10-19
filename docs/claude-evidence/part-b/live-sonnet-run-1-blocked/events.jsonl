@@ -1,0 +1,13 @@
+{"at": "2026-10-19T03:37:36.982621+00:00", "role": "harness", "message": "Created isolated run. No reviewer decisions copied."}
+{"at": "2026-10-19T03:37:43.480482+00:00", "role": "extract-rules", "message": "Verified the prepared rule extraction against the original PDF; no fresh model extraction claimed."}
+{"at": "2026-10-19T03:39:30.484307+00:00", "role": "spend-analyst", "message": "Recomputed full-population indicators using Python."}
+{"at": "2026-10-19T03:43:55.883946+00:00", "role": "findings-analyst", "message": "Claude extracted committee evidence; source verifier passed on attempt 1."}
+{"at": "2026-10-19T03:44:53.283403+00:00", "role": "risk-assessor", "message": "build_register.py rejected attempt 1; its report was returned to the agent."}
+{"at": "2026-10-19T03:45:17.982945+00:00", "role": "risk-assessor", "message": "Claude supplied source-linked risk judgments; the register builder accepted attempt 2."}
+{"at": "2026-10-19T03:49:49.980975+00:00", "role": "human", "message": "Reviewer explicitly decided every risk; validated revision closed the scope gate."}
+{"at": "2026-10-19T03:52:59.974464+00:00", "role": "planner", "message": "PACK READY v1: deterministic pack builder validated scope and drew samples."}
+{"at": "2026-10-19T03:54:39.681578+00:00", "role": "challenger", "message": "Review round 1 returned evidence-backed challenges."}
+{"at": "2026-10-19T03:56:38.079268+00:00", "role": "planner", "message": "build_pack.py rejected attempt 1; its report was returned to the agent."}
+{"at": "2026-10-19T03:57:40.586994+00:00", "role": "planner", "message": "PACK READY v2: revised in response to challenger messages."}
+{"at": "2026-10-19T03:58:28.675513+00:00", "role": "challenger", "message": "Review round 2 returned evidence-backed challenges."}
+{"at": "2026-10-19T03:58:28.676002+00:00", "role": "harness", "message": "Workflow stopped; see the displayed error. No sign-off allowed."}

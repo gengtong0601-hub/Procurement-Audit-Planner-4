@@ -248,6 +248,23 @@ class HarnessTests(unittest.TestCase):
                                             'recommend_in_scope': True}], 'excluded': []})
         self.assertNotIn('Prepared title', json.dumps(workflow.shape_only(workflow.read_json(self.run / 'outputs/history.json'))))
 
+    def test_challenges_open_after_two_revisions_go_to_the_auditor(self):
+        row = lambda status: {'risk': 'R-01', 'challenge': 'c', 'severity': 'Scope', 'evidence': '[rule:CPR-01]',
+                              'response': 'r', 'auditor_action': 'a', 'status': status}
+        replies, sent, plans = iter([{'challenges': [row('open')]}] * 3), [], iter([({'v': 2}, 1), ({'v': 3}, 1)])
+        def fake_generate(instructions, payload):
+            sent.append(payload)
+            return copy.deepcopy(next(replies))
+        with patch.object(workflow, 'generate_json', fake_generate), \
+                patch.object(workflow, 'generate_until_valid', lambda *a, **k: next(plans)):
+            plan, challenges = workflow.challenge_rounds(self.run, {'v': 1}, {}, ('x.py',))
+        self.assertEqual(plan, {'v': 3})  # the planner answered both rounds
+        self.assertEqual([p['round'] for p in sent], [1, 2, 3])
+        self.assertEqual(sent[2]['previous_challenges'][0]['status'], 'open')
+        self.assertEqual((sent[2]['plan_before_revision'], sent[2]['audit_plan']), ({'v': 2}, {'v': 3}))
+        self.assertEqual(challenges[0]['status'], 'for the auditor')
+        self.assertIn('| for the auditor |', (self.run / 'outputs/challenges.md').read_text())
+
     def test_live_evidence_drops_row_ids_but_keeps_metric_paths(self):
         value = {'tests': {'dup': {'count': 3, 'top20': [{'gbp': 1.5, 'row_ids': ['a.xlsx:1']}]}}}
         self.assertEqual(workflow.without_row_ids(value), {'tests': {'dup': {'count': 3, 'top20': [{'gbp': 1.5}]}}})

@@ -389,6 +389,46 @@ def write_challenges(run, challenges):
     (run / 'outputs/challenges.md').write_text('\n'.join(lines) + '\n')
 
 
+CHALLENGE_FORMAT = ' Return {challenges:[{risk,challenge,severity,evidence,response,auditor_action,status}]}.'
+CHALLENGE_TASKS = {
+    1: 'Round one: review the plan and raise at most eight specific, evidence-backed weaknesses, status open.',
+    2: ('Round two: check each earlier challenge against the revised plan and mark it resolved (the change is in the '
+        'plan), declined (a reason you accept) or open; add at most four new or repeated challenges.'),
+    3: ('Closing pass: check the revised plan and close every row. Each one is resolved, declined, or for the auditor '
+        '(rating or scope, or a decline you do not accept). Nothing may stay open.'),
+}
+
+
+def challenge_rounds(run, plan, payload, pack):
+    """Challenger and planner as the agent definitions describe: two rounds of challenge and revision, then a
+    closing pass in which every row is closed. Points the team cannot settle go to the auditor at sign-off."""
+    challenges, earlier_plan = [], None
+    for round_no in (1, 2, 3):
+        request = {'task': CHALLENGE_TASKS[round_no] + CHALLENGE_FORMAT, 'round': round_no, 'audit_plan': plan, **payload}
+        if challenges:
+            # The planner answers by revising the plan, so the challenger sees its own rows and both plan versions.
+            request.update(previous_challenges=challenges, plan_before_revision=earlier_plan)
+        challenges = generate_json(agent_instructions(run, 'challenger'), request).get('challenges', [])
+        if round_no == 3:
+            still_open = [c for c in challenges if isinstance(c, dict) and c.get('status') == 'open']
+            for item in still_open:
+                item['status'] = 'for the auditor'
+            if still_open:
+                event(run, 'harness', f'{len(still_open)} challenge(s) left open in the closing pass were passed to the auditor.')
+        write_challenges(run, challenges)
+        event(run, 'challenger', f'Review round {round_no} returned evidence-backed challenges.')
+        if round_no == 3 or not any(c.get('status') == 'open' for c in challenges):
+            break
+        earlier_plan = plan
+        plan, _ = generate_until_valid(
+            run, 'planner', agent_instructions(run, 'planner', 'audit-program'),
+            {'task': 'Revise audit-plan.json to address challenger feedback without changing human scope.',
+             'audit_plan': plan, 'messages_from_challenger': challenges, **payload},
+            'outputs/audit-plan.json', pack)
+        event(run, 'planner', f'PACK READY v{round_no + 1}: revised in response to challenger messages.')
+    return plan, challenges
+
+
 def build_plan(run):
     state = read_json(run / 'state.json')
     if state['stage'] != 'approved':
@@ -416,23 +456,7 @@ def build_plan(run):
         write_challenges(run, challenges)
         event(run, 'challenger', 'Prepared review point logged for the auditor. No independent model challenge claimed.')
     else:
-        for round_no in (1, 2):
-            result = generate_json(agent_instructions(run, 'challenger'),
-                                   {'task': 'Review the plan. Return {challenges:[{risk,challenge,severity,evidence,response,auditor_action,status}]}. status is open, resolved, declined or for the auditor. Raise specific evidence-backed weaknesses; do not mark a planner correction resolved before reading the revised plan.',
-                                    'round': round_no, 'audit_plan': plan, **payload})
-            challenges = result.get('challenges', [])
-            write_challenges(run, challenges)
-            event(run, 'challenger', f'Review round {round_no} returned evidence-backed challenges.')
-            if not any(c.get('status') == 'open' for c in challenges):
-                break
-            if round_no == 2:
-                raise ValueError('Unresolved challenge after two rounds; the pack remains blocked for review.')
-            plan, _ = generate_until_valid(
-                run, 'planner', agent_instructions(run, 'planner', 'audit-program'),
-                {'task': 'Revise audit-plan.json to address challenger feedback without changing human scope.',
-                 'audit_plan': plan, 'messages_from_challenger': challenges, **payload},
-                'outputs/audit-plan.json', pack)
-            event(run, 'planner', 'PACK READY v2: revised in response to challenger messages.')
+        challenge_rounds(run, plan, payload, pack)
     code, report = command(run, 'scripts/checks/run_checks.py', required=False)
     verdict = 'READY FOR SIGN-OFF' if code == 0 else 'BLOCKED'
     provenance = 'Prepared demonstration; no live Claude execution.' if state['mode'] == 'prepared' else 'Independent Claude API harness; not a native Claude Code agent team.'

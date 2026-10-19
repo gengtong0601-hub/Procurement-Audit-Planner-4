@@ -1,0 +1,7 @@
+{
+  "mode": "live",
+  "stage": "blocked",
+  "error": "Unresolved challenge after two rounds; the pack remains blocked for review.",
+  "reviewer": "tony",
+  "planning_started": true
+}
