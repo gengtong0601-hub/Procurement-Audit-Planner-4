@@ -91,8 +91,18 @@ def agent_instructions(run, agent, skill=None):
     return '\n\n'.join(chunks)
 
 
+def without_row_ids(value):
+    """Drop transaction row-ID lists: Python draws samples, the model never needs them."""
+    if isinstance(value, dict):
+        return {k: without_row_ids(v) for k, v in value.items() if k != 'row_ids'}
+    if isinstance(value, list):
+        return [without_row_ids(v) for v in value]
+    return value
+
+
 def evidence(run):
-    return {name: read_json(run / 'outputs' / (name + '.json'))
+    # Removing whole keys keeps every metric path ($.tests...[i].count) unchanged for citations.
+    return {name: without_row_ids(read_json(run / 'outputs' / (name + '.json')))
             for name in ('rules', 'analytics', 'history')}
 
 

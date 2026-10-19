@@ -191,10 +191,24 @@ class HarnessTests(unittest.TestCase):
 
     def test_provider_incomplete_or_malformed_response_rejected_without_network(self):
         env = {'ANTHROPIC_API_KEY': 'fake-test-key', 'ANTHROPIC_MODEL': 'fake-model'}
-        for body in ({'stop_reason': 'max_tokens'}, {'stop_reason': 'end_turn', 'content': [{'type': 'text', 'text': '{broken'}]}, {'stop_reason': 'end_turn', 'content': [{'type': 'text', 'text': '[]'}]}):
-            response = SimpleNamespace(status_code=200, json=lambda: body)
+        def fake_client(message):
+            class Stream:
+                def __enter__(self): return SimpleNamespace(get_final_message=lambda: message)
+                def __exit__(self, *exc): return False
+            messages = SimpleNamespace(stream=lambda **kwargs: Stream())
+            return SimpleNamespace(messages=messages, beta=SimpleNamespace(messages=messages))
+        text = lambda t: SimpleNamespace(type='text', text=t)
+        for stop, content in (('max_tokens', []), ('refusal', []), ('end_turn', [text('{broken')]), ('end_turn', [text('[]')])):
+            message = SimpleNamespace(stop_reason=stop, content=content)
             with patch.dict(os.environ, env), self.assertRaises(ValueError):
-                provider.generate_json('fixture', {}, transport=lambda *args, **kwargs: response)
+                provider.generate_json('fixture', {}, client=fake_client(message))
+        with patch.dict(os.environ, env):
+            ok = SimpleNamespace(stop_reason='end_turn', content=[text('```json\n{"ok": true}\n```')])
+            self.assertEqual(provider.generate_json('fixture', {}, client=fake_client(ok)), {'ok': True})
+
+    def test_live_evidence_drops_row_ids_but_keeps_metric_paths(self):
+        value = {'tests': {'dup': {'count': 3, 'top20': [{'gbp': 1.5, 'row_ids': ['a.xlsx:1']}]}}}
+        self.assertEqual(workflow.without_row_ids(value), {'tests': {'dup': {'count': 3, 'top20': [{'gbp': 1.5}]}}})
 
 
 class ActualPreparedEvidenceTest(unittest.TestCase):
