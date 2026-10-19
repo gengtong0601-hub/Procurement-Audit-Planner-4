@@ -239,6 +239,15 @@ class HarnessTests(unittest.TestCase):
         self.assertEqual(code, 1)
         self.assertIn('matrix_rows', report)
 
+    def test_live_examples_carry_structure_but_no_prepared_content(self):
+        prepared = {'risks': [{'id': 'R-01', 'title': 'Prepared title', 'likelihood': {'score': 3, 'justification': 'x [rule:CPR-12]'},
+                               'recommend_in_scope': True}, {'id': 'R-02'}], 'excluded': []}
+        shape = workflow.shape_only(prepared)
+        self.assertEqual(shape, {'risks': [{'id': '<text from the evidence>', 'title': '<text from the evidence>',
+                                            'likelihood': {'score': 0, 'justification': '<text from the evidence>'},
+                                            'recommend_in_scope': True}], 'excluded': []})
+        self.assertNotIn('Prepared title', json.dumps(workflow.shape_only(workflow.read_json(self.run / 'outputs/history.json'))))
+
     def test_live_evidence_drops_row_ids_but_keeps_metric_paths(self):
         value = {'tests': {'dup': {'count': 3, 'top20': [{'gbp': 1.5, 'row_ids': ['a.xlsx:1']}]}}}
         self.assertEqual(workflow.without_row_ids(value), {'tests': {'dup': {'count': 3, 'top20': [{'gbp': 1.5}]}}})

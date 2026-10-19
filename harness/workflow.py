@@ -109,6 +109,23 @@ def evidence(run):
 REPAIR_ATTEMPTS = 3  # first answer plus two repairs, as each agent file's "verify, fix, repeat" step asks
 
 
+def shape_only(value):
+    """An example's structure with its content removed, so an agent cannot copy prepared judgments."""
+    if isinstance(value, dict):
+        return {k: shape_only(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [shape_only(value[0])] if value else []
+    if isinstance(value, bool) or value is None:
+        return value
+    if isinstance(value, (int, float)):
+        return 0
+    return '<text from the evidence>'
+
+
+SHAPE_NOTE = (' The example gives the JSON structure only: every value in it is a placeholder. '
+              'Write all content, scores and citations from the supplied evidence.')
+
+
 def scoring_method_check(run):
     """The register builder must be able to score all 25 cells from history.json's council method."""
     builder = module_at(run, '.claude/skills/risk-assessment/build_register.py')
@@ -173,8 +190,8 @@ def initialise(run):
                       for p in sorted((run / 'data/committee').glob('*.pdf'))}
             _, attempt = generate_until_valid(
                 run, 'findings-analyst', agent_instructions(run, 'findings-analyst'),
-                {'task': 'Extract history using the existing schema. Preserve quotes and page evidence, not prior conclusions. Every item with a quote needs its own source and pdf_page.',
-                 'schema_example': read_json(run / 'outputs/history.json'), 'papers': papers},
+                {'task': 'Extract history from the papers using the schema of schema_example. Every item with a quote needs its own source and pdf_page.' + SHAPE_NOTE,
+                 'schema_example': shape_only(read_json(run / 'outputs/history.json')), 'papers': papers},
                 'outputs/history.json', [('scripts/verify_history.py', 'outputs/history.json', 'data/committee'), scoring_method_check])
             event(run, 'findings-analyst', f'Claude extracted committee evidence; source verifier passed on attempt {attempt}.')
 
@@ -187,8 +204,8 @@ def initialise(run):
             return ratings
         _, attempt = generate_until_valid(
             run, 'risk-assessor', agent_instructions(run, 'risk-assessor', 'risk-assessment'),
-            {'task': 'Create an initial risk-ratings.json. No human decisions or revision. Use the example shape, but source every judgment from the current evidence.',
-             'example_shape': read_json(run / 'outputs/risk-ratings.json'), **evidence(run)},
+            {'task': 'Create an initial risk-ratings.json from the evidence. No human decisions or revision.' + SHAPE_NOTE,
+             'example_shape': shape_only(read_json(run / 'outputs/risk-ratings.json')), **evidence(run)},
             'outputs/risk-ratings.json', ('.claude/skills/risk-assessment/build_register.py',), prepare=no_revision)
         event(run, 'risk-assessor', f'Claude supplied source-linked risk judgments; the register builder accepted attempt {attempt}.')
     else:
