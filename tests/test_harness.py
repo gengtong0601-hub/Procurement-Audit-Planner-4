@@ -230,6 +230,15 @@ class HarnessTests(unittest.TestCase):
                 self.assertRaisesRegex(ValueError, 'after 3 attempts'):
             workflow.generate_until_valid(self.run, 'planner', 'rules', {'task': 'Plan.'}, 'outputs/probe.json', ('x.py',))
 
+    def test_scoring_method_check_catches_an_unscorable_council_matrix(self):
+        self.assertEqual(workflow.scoring_method_check(self.run)[0], 0)  # the verified history.json scores all cells
+        history = workflow.read_json(self.run / 'outputs/history.json')
+        history['scoring_method']['combination'] = {'matrix': 'printed as a picture'}
+        workflow.write_json(self.run / 'outputs/history.json', history)
+        code, report = workflow.scoring_method_check(self.run)
+        self.assertEqual(code, 1)
+        self.assertIn('matrix_rows', report)
+
     def test_live_evidence_drops_row_ids_but_keeps_metric_paths(self):
         value = {'tests': {'dup': {'count': 3, 'top20': [{'gbp': 1.5, 'row_ids': ['a.xlsx:1']}]}}}
         self.assertEqual(workflow.without_row_ids(value), {'tests': {'dup': {'count': 3, 'top20': [{'gbp': 1.5}]}}})

@@ -109,20 +109,48 @@ def evidence(run):
 REPAIR_ATTEMPTS = 3  # first answer plus two repairs, as each agent file's "verify, fix, repeat" step asks
 
 
-def generate_until_valid(run, role, instructions, payload, target, check, prepare=None):
-    """Ask an agent for JSON, validate it with the project's script, and return the report for repair."""
+def scoring_method_check(run):
+    """The register builder must be able to score all 25 cells from history.json's council method."""
+    builder = module_at(run, '.claude/skills/risk-assessment/build_register.py')
+    method = read_json(run / 'outputs/history.json').get('scoring_method', {})
+    if not method.get('usable'):
+        return 0, 'scoring_method.usable is false; the builder discloses its fallback scales.'
+    failures = []
+    for likelihood in range(1, 6):
+        for impact in range(1, 6):
+            try:
+                builder.compute_rating(method, likelihood, impact)
+            except ValueError as exc:
+                failures.append(f'FAIL scoring_method: {exc}')
+    if not failures:
+        return 0, 'scoring_method: all 25 matrix cells and bands resolve.'
+    return 1, '\n'.join(failures[:8] + [
+        'Record the matrix as combination.matrix_rows: one row per impact score (integer "impact") with "cells": '
+        '[{"likelihood": int, "score_printed": int, "label": str}], and each band in "bands" with integer '
+        '"score_low"/"score_high" (null for an open end) and "level". Follow schema_example.scoring_method.'])
+
+
+def generate_until_valid(run, role, instructions, payload, target, checks, prepare=None):
+    """Ask an agent for JSON, validate it, and return any validator report to the agent for repair.
+
+    Each check is either a project script (a tuple of its path and arguments) or a function of the run."""
+    checks = [checks] if isinstance(checks, tuple) else checks
     for attempt in range(1, REPAIR_ATTEMPTS + 1):
         result = generate_json(instructions, payload)
         if prepare:
             result = prepare(result)
         write_json(run / target, result)
-        code, report = command(run, *check, required=False)
-        if code == 0:
+        for check in checks:
+            code, report = check(run) if callable(check) else command(run, *check, required=False)
+            name = check.__name__ if callable(check) else Path(check[0]).name
+            if code:
+                break
+        else:
             return result, attempt
-        event(run, role, f'{Path(check[0]).name} rejected attempt {attempt}; its report was returned to the agent.')
+        event(run, role, f'{name} rejected attempt {attempt}; its report was returned to the agent.')
         payload = {**payload, 'task': payload['task'] + ' Your previous output failed the validator. Fix every failure it lists and return the complete corrected JSON.',
                    'previous_output': result, 'validator_report': report[-6000:]}
-    raise ValueError(f'{Path(check[0]).name} stopped the workflow after {REPAIR_ATTEMPTS} attempts:\n{report[-7000:]}')
+    raise ValueError(f'{name} stopped the workflow after {REPAIR_ATTEMPTS} attempts:\n{report[-7000:]}')
 
 
 def initialise(run):
@@ -147,7 +175,7 @@ def initialise(run):
                 run, 'findings-analyst', agent_instructions(run, 'findings-analyst'),
                 {'task': 'Extract history using the existing schema. Preserve quotes and page evidence, not prior conclusions. Every item with a quote needs its own source and pdf_page.',
                  'schema_example': read_json(run / 'outputs/history.json'), 'papers': papers},
-                'outputs/history.json', ('scripts/verify_history.py', 'outputs/history.json', 'data/committee'))
+                'outputs/history.json', [('scripts/verify_history.py', 'outputs/history.json', 'data/committee'), scoring_method_check])
             event(run, 'findings-analyst', f'Claude extracted committee evidence; source verifier passed on attempt {attempt}.')
 
         with ThreadPoolExecutor(max_workers=2) as pool:
