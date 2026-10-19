@@ -106,6 +106,25 @@ def evidence(run):
             for name in ('rules', 'analytics', 'history')}
 
 
+REPAIR_ATTEMPTS = 3  # first answer plus two repairs, as each agent file's "verify, fix, repeat" step asks
+
+
+def generate_until_valid(run, role, instructions, payload, target, check, prepare=None):
+    """Ask an agent for JSON, validate it with the project's script, and return the report for repair."""
+    for attempt in range(1, REPAIR_ATTEMPTS + 1):
+        result = generate_json(instructions, payload)
+        if prepare:
+            result = prepare(result)
+        write_json(run / target, result)
+        code, report = command(run, *check, required=False)
+        if code == 0:
+            return result, attempt
+        event(run, role, f'{Path(check[0]).name} rejected attempt {attempt}; its report was returned to the agent.')
+        payload = {**payload, 'task': payload['task'] + ' Your previous output failed the validator. Fix every failure it lists and return the complete corrected JSON.',
+                   'previous_output': result, 'validator_report': report[-6000:]}
+    raise ValueError(f'{Path(check[0]).name} stopped the workflow after {REPAIR_ATTEMPTS} attempts:\n{report[-7000:]}')
+
+
 def initialise(run):
     state = read_json(run / 'state.json')
     command(run, '.claude/skills/extract-rules/verify_quotes.py', 'outputs/rules.json', 'data/contract-rules.pdf')
@@ -124,23 +143,26 @@ def initialise(run):
             papers = {p.name: [{'page': n, 'text': page.extract_text() or ''}
                               for n, page in enumerate(PdfReader(p).pages, 1)]
                       for p in sorted((run / 'data/committee').glob('*.pdf'))}
-            result = generate_json(agent_instructions(run, 'findings-analyst'),
-                                   {'task': 'Extract history using the existing schema. Preserve quotes and page evidence, not prior conclusions.',
-                                    'schema_example': read_json(run / 'outputs/history.json'), 'papers': papers})
-            write_json(run / 'outputs/history.json', result)
-            command(run, 'scripts/verify_history.py', 'outputs/history.json', 'data/committee')
-            event(run, 'findings-analyst', 'Claude extracted committee evidence; source verifier passed.')
+            _, attempt = generate_until_valid(
+                run, 'findings-analyst', agent_instructions(run, 'findings-analyst'),
+                {'task': 'Extract history using the existing schema. Preserve quotes and page evidence, not prior conclusions. Every item with a quote needs its own source and pdf_page.',
+                 'schema_example': read_json(run / 'outputs/history.json'), 'papers': papers},
+                'outputs/history.json', ('scripts/verify_history.py', 'outputs/history.json', 'data/committee'))
+            event(run, 'findings-analyst', f'Claude extracted committee evidence; source verifier passed on attempt {attempt}.')
 
         with ThreadPoolExecutor(max_workers=2) as pool:
             futures = [pool.submit(spend), pool.submit(findings)]
             for future in futures:
                 future.result()
-        ratings = generate_json(agent_instructions(run, 'risk-assessor', 'risk-assessment'),
-                                {'task': 'Create an initial risk-ratings.json. No human decisions or revision. Use the example shape, but source every judgment from the current evidence.',
-                                 'example_shape': read_json(run / 'outputs/risk-ratings.json'), **evidence(run)})
-        ratings.pop('revision', None)
-        write_json(run / 'outputs/risk-ratings.json', ratings)
-        event(run, 'risk-assessor', 'Claude supplied source-linked risk judgments; Python will validate and score them.')
+        def no_revision(ratings):
+            ratings.pop('revision', None)
+            return ratings
+        _, attempt = generate_until_valid(
+            run, 'risk-assessor', agent_instructions(run, 'risk-assessor', 'risk-assessment'),
+            {'task': 'Create an initial risk-ratings.json. No human decisions or revision. Use the example shape, but source every judgment from the current evidence.',
+             'example_shape': read_json(run / 'outputs/risk-ratings.json'), **evidence(run)},
+            'outputs/risk-ratings.json', ('.claude/skills/risk-assessment/build_register.py',), prepare=no_revision)
+        event(run, 'risk-assessor', f'Claude supplied source-linked risk judgments; the register builder accepted attempt {attempt}.')
     else:
         event(run, 'harness', 'Prepared evidence mode: replaying Codex-prepared judgments and computed evidence; no live Claude calls.')
     command(run, '.claude/skills/risk-assessment/build_register.py')
@@ -330,11 +352,16 @@ def build_plan(run):
     payload = {**evidence(run), 'risk_ratings': read_json(run / 'outputs/risk-ratings.json'),
                'auditor_decisions': (run / 'outputs/auditor-comments.md').read_text(),
                'available_csv_columns': {p.name: csv_columns(p) for p in (run / 'outputs/analytics-full').glob('*.csv')}}
-    plan = prepared_plan(run) if state['mode'] == 'prepared' else generate_json(
-        agent_instructions(run, 'planner', 'audit-program'),
-        {'task': 'Return audit-plan.json exactly in the skill schema. Decisions are fixed. All figures use placeholders.', **payload})
-    write_json(run / 'outputs/audit-plan.json', plan)
-    command(run, '.claude/skills/audit-program/build_pack.py')
+    pack = ('.claude/skills/audit-program/build_pack.py',)
+    if state['mode'] == 'prepared':
+        plan = prepared_plan(run)
+        write_json(run / 'outputs/audit-plan.json', plan)
+        command(run, *pack)
+    else:
+        plan, _ = generate_until_valid(
+            run, 'planner', agent_instructions(run, 'planner', 'audit-program'),
+            {'task': 'Return audit-plan.json exactly in the skill schema. Decisions are fixed. All figures use placeholders.', **payload},
+            'outputs/audit-plan.json', pack)
     event(run, 'planner', 'PACK READY v1: deterministic pack builder validated scope and drew samples.')
     if state['mode'] == 'prepared':
         challenges = [{'risk': 'Scope', 'challenge': 'Unresolved statutory parameters limit testing, and notice matching does not establish contract coverage.',
@@ -355,11 +382,11 @@ def build_plan(run):
                 break
             if round_no == 2:
                 raise ValueError('Unresolved challenge after two rounds; the pack remains blocked for review.')
-            plan = generate_json(agent_instructions(run, 'planner', 'audit-program'),
-                                 {'task': 'Revise audit-plan.json to address challenger feedback without changing human scope.',
-                                  'audit_plan': plan, 'messages_from_challenger': challenges, **payload})
-            write_json(run / 'outputs/audit-plan.json', plan)
-            command(run, '.claude/skills/audit-program/build_pack.py')
+            plan, _ = generate_until_valid(
+                run, 'planner', agent_instructions(run, 'planner', 'audit-program'),
+                {'task': 'Revise audit-plan.json to address challenger feedback without changing human scope.',
+                 'audit_plan': plan, 'messages_from_challenger': challenges, **payload},
+                'outputs/audit-plan.json', pack)
             event(run, 'planner', 'PACK READY v2: revised in response to challenger messages.')
     code, report = command(run, 'scripts/checks/run_checks.py', required=False)
     verdict = 'READY FOR SIGN-OFF' if code == 0 else 'BLOCKED'

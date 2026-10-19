@@ -206,6 +206,22 @@ class HarnessTests(unittest.TestCase):
             ok = SimpleNamespace(stop_reason='end_turn', content=[text('```json\n{"ok": true}\n```')])
             self.assertEqual(provider.generate_json('fixture', {}, client=fake_client(ok)), {'ok': True})
 
+    def test_live_agent_gets_validator_report_and_retries(self):
+        replies, sent = iter([{'v': 1}, {'v': 2}]), []
+        def fake_generate(instructions, payload):
+            sent.append(payload)
+            return next(replies)
+        codes = iter([(1, 'FAIL quote NOT FOUND'), (0, 'ALL CHECKS PASSED')])
+        with patch.object(workflow, 'generate_json', fake_generate), patch.object(workflow, 'command', lambda *a, **k: next(codes)):
+            result, attempt = workflow.generate_until_valid(self.run, 'findings-analyst', 'rules', {'task': 'Extract.'},
+                                                            'outputs/probe.json', ('scripts/verify_history.py',))
+        self.assertEqual((result, attempt), ({'v': 2}, 2))
+        self.assertEqual(sent[1]['validator_report'], 'FAIL quote NOT FOUND')
+        self.assertEqual(sent[1]['previous_output'], {'v': 1})
+        with patch.object(workflow, 'generate_json', lambda *a: {'v': 0}), patch.object(workflow, 'command', lambda *a, **k: (1, 'FAIL')), \
+                self.assertRaisesRegex(ValueError, 'after 3 attempts'):
+            workflow.generate_until_valid(self.run, 'planner', 'rules', {'task': 'Plan.'}, 'outputs/probe.json', ('x.py',))
+
     def test_live_evidence_drops_row_ids_but_keeps_metric_paths(self):
         value = {'tests': {'dup': {'count': 3, 'top20': [{'gbp': 1.5, 'row_ids': ['a.xlsx:1']}]}}}
         self.assertEqual(workflow.without_row_ids(value), {'tests': {'dup': {'count': 3, 'top20': [{'gbp': 1.5}]}}})
