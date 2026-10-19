@@ -1,0 +1,18 @@
+{"at": "2026-10-19T04:05:38.318676+00:00", "role": "harness", "message": "Created isolated run. No reviewer decisions copied."}
+{"at": "2026-10-19T04:05:44.026805+00:00", "role": "extract-rules", "message": "Verified the prepared rule extraction against the original PDF; no fresh model extraction claimed."}
+{"at": "2026-10-19T04:07:27.037134+00:00", "role": "spend-analyst", "message": "Recomputed full-population indicators using Python."}
+{"at": "2026-10-19T04:11:40.328762+00:00", "role": "findings-analyst", "message": "verify_history.py rejected attempt 1; its report was returned to the agent."}
+{"at": "2026-10-19T04:13:43.813467+00:00", "role": "findings-analyst", "message": "Claude extracted committee evidence; source verifier passed on attempt 2."}
+{"at": "2026-10-19T04:14:53.412428+00:00", "role": "risk-assessor", "message": "Claude supplied source-linked risk judgments; the register builder accepted attempt 1."}
+{"at": "2026-10-19T04:18:52.317718+00:00", "role": "human", "message": "Reviewer explicitly decided every risk; validated revision closed the scope gate."}
+{"at": "2026-10-19T04:21:08.820352+00:00", "role": "planner", "message": "build_pack.py rejected attempt 1; its report was returned to the agent."}
+{"at": "2026-10-19T04:21:47.614130+00:00", "role": "planner", "message": "PACK READY v1: deterministic pack builder validated scope and drew samples."}
+{"at": "2026-10-19T04:23:16.726147+00:00", "role": "challenger", "message": "Review round 1 returned evidence-backed challenges."}
+{"at": "2026-10-19T04:25:26.520630+00:00", "role": "planner", "message": "build_pack.py rejected attempt 1; its report was returned to the agent."}
+{"at": "2026-10-19T04:26:39.123892+00:00", "role": "planner", "message": "PACK READY v2: revised in response to challenger messages."}
+{"at": "2026-10-19T04:27:43.005945+00:00", "role": "challenger", "message": "Review round 2 returned evidence-backed challenges."}
+{"at": "2026-10-19T04:29:14.819788+00:00", "role": "planner", "message": "build_pack.py rejected attempt 1; its report was returned to the agent."}
+{"at": "2026-10-19T04:30:23.513381+00:00", "role": "planner", "message": "PACK READY v3: revised in response to challenger messages."}
+{"at": "2026-10-19T04:30:54.417270+00:00", "role": "challenger", "message": "Review round 3 returned evidence-backed challenges."}
+{"at": "2026-10-19T04:31:25.923868+00:00", "role": "qa-reviewer", "message": "READY FOR SIGN-OFF: results saved in review.md."}
+{"at": "2026-10-19T04:33:40.623685+00:00", "role": "human", "message": "Human signed off the checked planning pack; this is not an audit conclusion."}

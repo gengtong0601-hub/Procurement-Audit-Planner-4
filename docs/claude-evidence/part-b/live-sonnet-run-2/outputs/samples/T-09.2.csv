@@ -1,0 +1,10 @@
+test,item,group,row_id,source_file,sheet_row,pay_date,supplier,amount,service,narrative
+T-09.2,1,PREPAID FINANCIAL SERVICES,Over500_2026_P04_-_published.xlsx:898,Over500_2026_P04_-_published.xlsx,,2026-07-13,PREPAID FINANCIAL SERVICES,1070.00,Adult Social Care,Purchase - Equipment
+T-09.2,1,PREPAID FINANCIAL SERVICES,Over500_2026_P02_-_published.xlsx:443,Over500_2026_P02_-_published.xlsx,,2026-05-27,PREPAID FINANCIAL SERVICES,1060.00,Adult Social Care,Purchase - Equipment
+T-09.2,1,PREPAID FINANCIAL SERVICES,Over500_2026_P02_-_published.xlsx:442,Over500_2026_P02_-_published.xlsx,,2026-05-20,PREPAID FINANCIAL SERVICES,1015.00,Adult Social Care,Purchase - Equipment
+T-09.2,1,PREPAID FINANCIAL SERVICES,Over500_2026_P03_-_published.xlsx:365,Over500_2026_P03_-_published.xlsx,,2026-06-10,PREPAID FINANCIAL SERVICES,1015.00,Adult Social Care,Purchase - Equipment
+T-09.2,1,PREPAID FINANCIAL SERVICES,Over500_2026_P02_-_published.xlsx:449,Over500_2026_P02_-_published.xlsx,,2026-05-27,PREPAID FINANCIAL SERVICES,1000.00,Development & Housing,Purchase - Equipment
+T-09.2,2,E WALLET,Over500_2026_P02_-_published.xlsx:2283,Over500_2026_P02_-_published.xlsx,,2026-05-01,E-WALLET,3000.00,Children's Social Care,Allowances for provision care
+T-09.2,2,E WALLET,Over500_2026_P03_-_published.xlsx:2633,Over500_2026_P03_-_published.xlsx,,2026-06-17,E-WALLET,3000.00,Children's Social Care,Allowances for provision care
+T-09.2,2,E WALLET,Over500_2026_P02_-_published.xlsx:2291,Over500_2026_P02_-_published.xlsx,,2026-05-01,E-WALLET,1000.00,Children's Social Care,Allowances for provision care
+T-09.2,2,E WALLET,Over500_2026_P03_-_published.xlsx:3367,Over500_2026_P03_-_published.xlsx,,2026-06-17,E-WALLET,1000.00,Children's Social Care,Allowances for provision care

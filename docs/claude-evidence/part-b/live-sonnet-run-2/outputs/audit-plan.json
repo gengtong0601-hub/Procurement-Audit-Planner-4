@@ -1,0 +1,850 @@
+{
+  "generated_at": "2026-10-19",
+  "memo": {
+    "purpose": [
+      "This pack sets out how the auditor-approved risks will be tested against the Contract Rules. Each risk has an expected control, a test step and a targeted sample or enquiry. Every pattern in the spend data is an indicator to investigate, not a finding about any person, team or supplier."
+    ],
+    "background": [
+      "{{$.population.rows_after_exclusions}} payments over the publication floor, across {{$.population.months_covered}} months, were analysed against the Rules [metric:$.population.rows_after_exclusions].",
+      "Payments to redacted payees ({{$.population.excluded.redacted_supplier.rows}} rows) were excluded from supplier-level tests because they combine unrelated payees [metric:$.population.excluded.redacted_supplier.rows].",
+      "Duplicate-payment indicators were found in {{$.tests.duplicates.count}} groups [metric:$.tests.duplicates.count]. Many are care and education placement payments, which can legitimately repeat. Each tier is therefore sampled separately for general procurement and for placements, and every item is tested by invoice agreement rather than assumed to be an error.",
+      "Split-purchase windows also exist at the highest competition-relevant boundary ({{$.tests.split_purchases.tiers[2].headline.windows}} general-procurement windows) [metric:$.tests.split_purchases.tiers[2].headline.windows]. These are tested for aggregation and for the approval route."
+    ],
+    "approach": [
+      "Risks were identified from the analytics, rated on the Council's own likelihood and impact scales, and put to the auditor for decision. One risk was rejected for this cycle and is not planned here.",
+      "For each approved risk the plan names the control the Rules require, a test step that cites the Rule, and a sample. Samples are drawn by script from the analytics lists and checked against the cleaned spend file. Where payments are used only to select items, the test first establishes the value of the underlying requirement.",
+      "Where the evidence sits outside the spend data (waivers, exception reports, case notes, prior audit actions), the test is an enquiry and document review with no transaction sample.",
+      "Placement payments are kept separate from general procurement in samples, because the Rules exempt individually chosen placements from competition on condition that the reasons for the choice are recorded. Agency-staff and grant payees with no matching notice are sampled separately.",
+      "The duplicate-indicator samples are stratified by tier and by payment type. The placement stratum carries most of the value beyond the first instance ({{$.tests.duplicates.tiers.same_timestamp.by_tag.care_or_education_placement.gbp}} in the same-timestamp tier alone) [metric:$.tests.duplicates.tiers.same_timestamp.by_tag.care_or_education_placement.gbp], so it receives the larger sample, one group per payee. These are targeted samples, and the auditor may extend them if the first results warrant it.",
+      "Payees that are other public authorities are left out of the quote and aggregation samples, because a quotation exercise is unlikely to apply to them. The auditor can ask for them to be added.",
+      "Two payees that may be direct-payment or prepaid channels are not sampled from the flagged value band. They are tested under the personal budgets follow-up across the payments they received in the period, after the Council says what each one represents.",
+      "Where sample order would otherwise depend on tied payment values, items are drawn one per payee in date order, so that no value ranking is implied."
+    ],
+    "limitations": [
+      "The statutory threshold values are not stated in the Rules and were not supplied, so boundaries that depend on them are untested and no value has been assumed.",
+      "Procurement bands in the Rules apply to the total value of a contract. Payment values in the spend data are not contract values, and the Rules conflict on whether VAT is included in that value. Each route test therefore starts from the value of the full requirement, not the payment.",
+      "The notice file is a Contracts Finder export, not the Council's contract register. A supplier with no matching notice is a prompt to check the register, not evidence of off-contract spend.",
+      "The population holds only payments over the publication floor, so split-purchase and duplicate indicators are lower bounds.",
+      "The payment date is a payment-run timestamp, not an invoice date.",
+      "Near-name matches are candidates for auditor confirmation and are not counted as matches.",
+      "The number of payees above the award-rate ratio reflects how few suppliers could be tested, as {{$.tests.spend_vs_award.excluded.no_unique_active_notice}} payees had no single active notice [metric:$.tests.spend_vs_award.excluded.no_unique_active_notice]. It is a test-coverage limit and does not measure how common the pattern is.",
+      "The nature of two payees at the lowest boundary (an e-wallet and a prepaid card provider) is not known from the data. They are tested separately under the personal budgets follow-up and are excluded from the route sample until the Council confirms what they are.",
+      "Two clauses of the Rules conflict on who may grant a waiver. The plan tests both and asks the auditor to clarify which applies."
+    ]
+  },
+  "risks": [
+    {
+      "id": "R-01",
+      "objective": "Conclude whether the full requirement behind payments observed just below the printed quote boundaries was procured by the route the Rules require for its total value band.",
+      "controls": [
+        {
+          "id": "C-01.1",
+          "control": "Purchases in the lowest competition band have at least one quote sought from an appropriate source.",
+          "cites": [
+            "rule:CPR-68"
+          ],
+          "owner": "Not named in the Rules"
+        },
+        {
+          "id": "C-01.2",
+          "control": "Purchases at the next band have invitations to quote sent through the Procurement Portal to at least three appropriate sources, based on the total value of the requirement.",
+          "cites": [
+            "rule:CPR-69",
+            "rule:CPR-71"
+          ],
+          "owner": "Not named in the Rules"
+        }
+      ],
+      "tests": [
+        {
+          "id": "T-01.1",
+          "control": "C-01.1",
+          "step": "For each sampled payment, establish the total value of the underlying requirement by obtaining the orders, requisitions and any related payments to the same payee, and decide whether it exceeded the lowest quote boundary. If it did not, record that a quote was not required and that the payment alone could not show a failure. If it did, obtain the quote or quotes held and confirm that a quote was sought and that its value and date support the amount. Note whether the payee has repeat payments at the same value.",
+          "evidence": "Orders, requisitions, quotation, approval record, schedule of related payments",
+          "cites": [
+            "rule:CPR-68",
+            "rule:CPR-12",
+            "metric:$.tests.threshold_clustering.tiers[0].count"
+          ],
+          "sample": {
+            "kind": "rows",
+            "source": "threshold-clustering.csv",
+            "where": {
+              "threshold": 1000,
+              "tag": "general_procurement"
+            },
+            "where_not_match": {
+              "supplier_norm": "^(E WALLET|PREPAID FINANCIAL SERVICES)$"
+            },
+            "order_by": "pay_date",
+            "descending": true,
+            "n": 5,
+            "key": "row_id",
+            "distinct_by": "supplier_norm"
+          },
+          "pbc": [
+            "Orders, requisitions, quotes and approvals for the sampled payments",
+            "Schedule of all payments to each sampled payee in the period"
+          ]
+        },
+        {
+          "id": "T-01.2",
+          "control": "C-01.2",
+          "step": "For each sampled payment, obtain the contract, award notice or requisition and establish the total value of the full requirement, with the VAT basis the Council applies. Decide which band that value falls in, then obtain the invitations to quote and the responses. Confirm that the route used matched the band, that at least three sources were invited through the Portal, that an SME or VCSE and a local supplier were included where appropriate and possible, and that the award followed the quotes received. Where the payee also appears in the award-rate test, compare the award value and term with the route used. Payees that are other public authorities are excluded from this sample.",
+          "evidence": "Contract or award notice, requisition, Portal invitation record, quotes received, evaluation note, award decision",
+          "cites": [
+            "rule:CPR-69",
+            "rule:CPR-71",
+            "rule:CPR-12",
+            "metric:$.tests.threshold_clustering.tiers[1].count"
+          ],
+          "sample": {
+            "kind": "rows",
+            "source": "threshold-clustering.csv",
+            "where": {
+              "threshold": 25000,
+              "tag": "general_procurement"
+            },
+            "where_not_match": {
+              "supplier_norm": "\\b(COUNCIL|BOROUGH|CNCL)\\b"
+            },
+            "order_by": "amount_pence",
+            "descending": true,
+            "n": 5,
+            "key": "row_id",
+            "distinct_by": "supplier_norm"
+          },
+          "pbc": [
+            "Contracts, award notices and requisitions for the sampled payments",
+            "Portal invitation records and quotes",
+            "Statement of the VAT basis used when banding requirements"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "R-02",
+      "objective": "Conclude whether related requirements were treated as one purchase when the route was chosen, or were bought in parts, and whether aggregated requirements above the key decision boundary followed the approval route.",
+      "controls": [
+        {
+          "id": "C-02.1",
+          "control": "Requirements are not split or disaggregated to avoid the Procurement Legislation or the Rules, and related needs are considered together when the route is chosen.",
+          "cites": [
+            "rule:CPR-12"
+          ],
+          "owner": "Not named in the Rules"
+        },
+        {
+          "id": "C-02.2",
+          "control": "Awards of aggregated value above the key decision boundary are authorised as the Rules require, as a Key Decision with a board-approved written report, or with Executive approval at the highest band.",
+          "cites": [
+            "rule:CPR-02",
+            "rule:CPR-04",
+            "rule:CPR-66",
+            "rule:CPR-67"
+          ],
+          "owner": "Relevant Service Director, in consultation with the Portfolio Holder; the Executive at the highest band"
+        }
+      ],
+      "tests": [
+        {
+          "id": "T-02.1",
+          "control": "C-02.1",
+          "step": "For each sampled window, obtain the orders, requisitions and any quotes behind the grouped payments. Establish whether they were one requirement and, if so, whether the route followed the combined value. Record the reason given for separate orders. Payees that are other public authorities are excluded from this sample.",
+          "evidence": "Purchase orders, requisitions, quotations, contract register entry, officer explanation",
+          "cites": [
+            "rule:CPR-12",
+            "rule:CPR-69",
+            "rule:CPR-71",
+            "metric:$.tests.split_purchases.tiers[1].headline.windows"
+          ],
+          "sample": {
+            "kind": "groups",
+            "source": "split-purchases.csv",
+            "where": {
+              "threshold": 25000,
+              "tag": "general_procurement"
+            },
+            "where_not_match": {
+              "supplier_norm": "\\b(COUNCIL|BOROUGH|CNCL)\\b"
+            },
+            "order_by": "total_gbp",
+            "descending": true,
+            "n": 10,
+            "key": "window_id",
+            "ids_column": "row_ids",
+            "distinct_by": "supplier_norm"
+          },
+          "pbc": [
+            "Orders, requisitions and quotes for the payments in each sampled window"
+          ]
+        },
+        {
+          "id": "T-02.2",
+          "control": "C-02.1",
+          "step": "For each general-procurement window at the highest boundary, obtain the contract, orders and requisitions behind the grouped payments. Establish whether they form one requirement, whether the aggregate value was considered when the route was chosen, and whether any call-off or framework arrangement applies. Record the reason given for any separate orders.",
+          "evidence": "Contract, purchase orders, requisitions, framework or call-off record, officer explanation",
+          "cites": [
+            "rule:CPR-12",
+            "metric:$.tests.split_purchases.tiers[2].headline.windows"
+          ],
+          "sample": {
+            "kind": "groups",
+            "source": "split-purchases.csv",
+            "where": {
+              "threshold": 500000,
+              "tag": "general_procurement"
+            },
+            "order_by": "total_gbp",
+            "descending": true,
+            "n": 10,
+            "key": "window_id",
+            "ids_column": "row_ids"
+          },
+          "pbc": [
+            "Contracts, orders and requisitions for each highest-boundary window",
+            "Framework or call-off records where relied on"
+          ]
+        },
+        {
+          "id": "T-02.3",
+          "control": "C-02.2",
+          "step": "For the same highest-boundary windows, establish the aggregate contract value and obtain the award decision. Confirm that it was taken at the level the Rules require for that value, that the written report was approved by the relevant board where required, and that the Key Decision procedure was followed. Where the aggregate is in the highest band, confirm Executive approval or delegated authority.",
+          "evidence": "Award decision record, Key Decision notice, board-approved written report, Executive minute or delegation",
+          "cites": [
+            "rule:CPR-02",
+            "rule:CPR-04",
+            "rule:CPR-66",
+            "rule:CPR-67",
+            "metric:$.tests.split_purchases.tiers[2].headline.windows"
+          ],
+          "sample": {
+            "kind": "groups",
+            "source": "split-purchases.csv",
+            "where": {
+              "threshold": 500000,
+              "tag": "general_procurement"
+            },
+            "order_by": "total_gbp",
+            "descending": true,
+            "n": 10,
+            "key": "window_id",
+            "ids_column": "row_ids"
+          },
+          "pbc": [
+            "Award decisions, Key Decision notices and board reports for each highest-boundary window"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "R-03",
+      "objective": "Conclude whether contract opportunities and awards behind unmatched supplier spend, including managed-service agency spend and grants that may be contracts, were advertised, notified and recorded as the Rules require.",
+      "controls": [
+        {
+          "id": "C-03.1",
+          "control": "Opportunities above the relevant boundary are advertised on the CDP before other media, and each CDP notice is approved and issued by the Service Lead for Procurement and Commissioning or their delegate.",
+          "cites": [
+            "rule:CPR-70",
+            "rule:CPR-72",
+            "rule:CPR-10",
+            "rule:CPR-11"
+          ],
+          "owner": "Service Lead for Procurement and Commissioning or their delegate"
+        },
+        {
+          "id": "C-03.2",
+          "control": "Each award is notified to the Service Lead for Commissioning and Procurement for the Contract Register, and the register and tender invitations are published.",
+          "cites": [
+            "rule:CPR-07",
+            "rule:CPR-35",
+            "rule:CPR-06"
+          ],
+          "owner": "Relevant Service Director"
+        }
+      ],
+      "tests": [
+        {
+          "id": "T-03.1",
+          "control": "C-03.1",
+          "step": "For each sampled supplier, obtain the Council's contract register entry and any CDP or Find a Tender notice. Where no notice or entry exists, ask for the contract, the route taken and any exemption relied on. Confirm who approved the notice.",
+          "evidence": "Contract register entry, CDP or Find a Tender notice, contract, approval of notice",
+          "cites": [
+            "rule:CPR-70",
+            "rule:CPR-72",
+            "rule:CPR-10",
+            "rule:CPR-11",
+            "metric:$.tests.off_contract.eligible_suppliers",
+            "metric:$.matching.none"
+          ],
+          "sample": {
+            "kind": "suppliers",
+            "source": "off-contract.csv",
+            "where": {
+              "dominant_tag": "general_procurement",
+              "match_class": "none"
+            },
+            "where_not_match": {
+              "supplier": "(?i)\\b(COUNCIL|BOROUGH|CNCL)\\b"
+            },
+            "order_by": "total_gbp",
+            "descending": true,
+            "n": 10,
+            "key": "supplier_norm",
+            "per_group_n": 3
+          },
+          "pbc": [
+            "Council contract register extract",
+            "Contracts and notices for the sampled suppliers",
+            "Record of any exemption or framework call-off relied on"
+          ]
+        },
+        {
+          "id": "T-03.2",
+          "control": "C-03.2",
+          "step": "Enquire how awards reach the Contract Register and how the register and tender invitations are published. Compare the register with the Contracts Finder notice file for completeness, and report any award with no notification or entry.",
+          "evidence": "Contract register, award notifications, publication records, process description",
+          "cites": [
+            "rule:CPR-07",
+            "rule:CPR-35",
+            "rule:CPR-06"
+          ],
+          "sample": {
+            "kind": "none",
+            "note": "Register completeness enquiry and document review; no transaction sample."
+          },
+          "pbc": [
+            "Contract register extract with value, duration and supplier",
+            "Award notifications to the Service Lead for Commissioning and Procurement",
+            "Published tender invitations list"
+          ]
+        },
+        {
+          "id": "T-03.3",
+          "control": "C-03.1",
+          "step": "For each unmatched agency-staff supplier, obtain the managed-service or framework agreement, or the contract, that governs the spend. Establish the route by which it was let, whether a CDP or Find a Tender notice was published or an exemption applies, and whether the register holds an entry. Record the basis if a managed-service or framework route is relied on; do not assume one.",
+          "evidence": "Managed-service or framework agreement, notice or exemption record, contract register entry, approval of notice",
+          "cites": [
+            "rule:CPR-70",
+            "rule:CPR-10",
+            "rule:CPR-07",
+            "metric:$.tests.off_contract.unmatched_by_tag.agency_staff.suppliers"
+          ],
+          "sample": {
+            "kind": "suppliers",
+            "source": "off-contract.csv",
+            "where": {
+              "dominant_tag": "agency_staff",
+              "match_class": "none"
+            },
+            "order_by": "total_gbp",
+            "descending": true,
+            "n": 3,
+            "key": "supplier_norm",
+            "per_group_n": 5
+          },
+          "pbc": [
+            "Agreement governing agency-staff spend and its route to award",
+            "Notice, exemption or register entry for that agreement"
+          ]
+        },
+        {
+          "id": "T-03.4",
+          "control": "C-03.2",
+          "step": "For each sampled grant payee, obtain the grant agreement and the grant register entry. Establish whether the arrangement is a grant or amounts to a contract under the Rules' definition of entering a contract. Where it does, check that the award was notified for the Contract Register. Where it does not, record the basis for treating it as a grant.",
+          "evidence": "Grant agreement, grant register entry, award notification, officer explanation of classification",
+          "cites": [
+            "rule:CPR-07",
+            "rule:CPR-35",
+            "metric:$.tests.off_contract.unmatched_by_tag.grant.suppliers"
+          ],
+          "sample": {
+            "kind": "suppliers",
+            "source": "off-contract.csv",
+            "where": {
+              "dominant_tag": "grant",
+              "match_class": "none"
+            },
+            "order_by": "total_gbp",
+            "descending": true,
+            "n": 5,
+            "key": "supplier_norm",
+            "per_group_n": 2
+          },
+          "pbc": [
+            "Grant register for the period",
+            "Grant agreements for the sampled payees"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "R-04",
+      "objective": "Conclude whether payments to the same payee for the same amount were valid separate payments or possible duplicates, separately for general procurement and for placements, and whether a pre-payment check operates.",
+      "controls": [
+        {
+          "id": "C-04.1",
+          "control": "Written evidence, including electronic evidence, supports every purchase, so that each payment can be agreed to an invoice and order before release.",
+          "cites": [
+            "rule:CPR-32"
+          ],
+          "owner": "Not named in the Rules"
+        }
+      ],
+      "tests": [
+        {
+          "id": "T-04.1",
+          "control": "C-04.1",
+          "step": "General-procurement stratum, same-timestamp tier. For each sampled group, agree every payment to its own invoice, order and receipt. Establish whether the payments are separate valid charges or a repeated payment, and whether a pre-payment check would have caught it. Record any recovery action.",
+          "evidence": "Invoices, orders, receipt records, remittance advices, supplier statements",
+          "cites": [
+            "rule:CPR-32",
+            "metric:$.tests.duplicates.tiers.same_timestamp.by_tag.general_procurement.rows"
+          ],
+          "sample": {
+            "kind": "groups",
+            "source": "duplicates.csv",
+            "where": {
+              "tier": "same_timestamp",
+              "tag": "general_procurement"
+            },
+            "order_by": "excess_gbp",
+            "descending": true,
+            "n": 3,
+            "key": "group_id",
+            "ids_column": "row_ids",
+            "distinct_by": "supplier_norm"
+          },
+          "pbc": [
+            "Invoices and remittances for the sampled general-procurement groups",
+            "Description of any duplicate-payment check before release"
+          ]
+        },
+        {
+          "id": "T-04.2",
+          "control": "C-04.1",
+          "step": "General-procurement stratum, different-timestamp tier. For each sampled group, agree every payment to its own invoice, order and receipt. Establish whether it is a separate valid charge or a repeated payment, and whether the pre-payment check would have caught it.",
+          "evidence": "Invoices, orders, receipt records, remittance advices",
+          "cites": [
+            "rule:CPR-32",
+            "metric:$.tests.duplicates.tiers.different_time.by_tag.general_procurement.rows"
+          ],
+          "sample": {
+            "kind": "groups",
+            "source": "duplicates.csv",
+            "where": {
+              "tier": "different_time",
+              "tag": "general_procurement"
+            },
+            "order_by": "excess_gbp",
+            "descending": true,
+            "n": 3,
+            "key": "group_id",
+            "ids_column": "row_ids",
+            "distinct_by": "supplier_norm",
+            "exclude_drawn_in": [
+              "T-04.1"
+            ]
+          },
+          "pbc": [
+            "Invoices and remittances for the sampled general-procurement groups with differing timestamps"
+          ]
+        },
+        {
+          "id": "T-04.3",
+          "control": "C-04.1",
+          "step": "Placement stratum, same-timestamp tier. This stratum holds most of the value beyond the first instance, so it carries the larger sample. For each sampled group, agree every payment to the individual service user's invoice and placement record. Establish whether the payments are separate charges, such as different service users at the same fee, or a repeated payment for one individual.",
+          "evidence": "Provider invoices by service user, placement records, remittance advices, provider statements",
+          "cites": [
+            "rule:CPR-32",
+            "metric:$.tests.duplicates.tiers.same_timestamp.by_tag.care_or_education_placement.rows"
+          ],
+          "sample": {
+            "kind": "groups",
+            "source": "duplicates.csv",
+            "where": {
+              "tier": "same_timestamp",
+              "tag": "care_or_education_placement"
+            },
+            "order_by": "excess_gbp",
+            "descending": true,
+            "n": 5,
+            "key": "group_id",
+            "ids_column": "row_ids",
+            "distinct_by": "supplier_norm"
+          },
+          "pbc": [
+            "Invoices by service user and remittances for the sampled placement groups"
+          ]
+        },
+        {
+          "id": "T-04.4",
+          "control": "C-04.1",
+          "step": "Placement stratum, different-timestamp tier. This stratum also holds a large share of the value beyond the first instance, so it carries the larger sample. For each sampled group, agree every payment to the individual service user's invoice and placement record. Establish whether each is a separate charge or a repeated payment for one individual.",
+          "evidence": "Provider invoices by service user, placement records, remittance advices",
+          "cites": [
+            "rule:CPR-32",
+            "metric:$.tests.duplicates.tiers.different_time.by_tag.care_or_education_placement.rows"
+          ],
+          "sample": {
+            "kind": "groups",
+            "source": "duplicates.csv",
+            "where": {
+              "tier": "different_time",
+              "tag": "care_or_education_placement"
+            },
+            "order_by": "excess_gbp",
+            "descending": true,
+            "n": 5,
+            "key": "group_id",
+            "ids_column": "row_ids",
+            "distinct_by": "supplier_norm",
+            "exclude_drawn_in": [
+              "T-04.3"
+            ]
+          },
+          "pbc": [
+            "Invoices by service user and remittances for the sampled placement groups with differing timestamps"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "R-06",
+      "objective": "Conclude whether spend above the annual rate of the published award value is supported by approved variations or extensions, for every supplier eligible for the test.",
+      "controls": [
+        {
+          "id": "C-06.1",
+          "control": "Variations of scope are approved in advance by the Monitoring Officer and S151 Officer below the relevant boundary, and by the relevant board above it after an extension report.",
+          "cites": [
+            "rule:CPR-79",
+            "rule:CPR-80"
+          ],
+          "owner": "Monitoring Officer and S151 Officer"
+        }
+      ],
+      "tests": [
+        {
+          "id": "T-06.1",
+          "control": "C-06.1",
+          "step": "Every supplier eligible for the test is covered, because the eligible set is small enough to test in full. For each, obtain the award, any variation or extension record and the approval. Compare payments with the award value and term. Note the notice end date in the spend-versus-award file and, where the contract has ended or is close to ending, request the extension evidence. Confirm the approver required for the contract value signed off before the extra spend.",
+          "evidence": "Contract and award notice, variation or extension records, approval, board report",
+          "cites": [
+            "rule:CPR-79",
+            "rule:CPR-80",
+            "metric:$.tests.spend_vs_award.count"
+          ],
+          "sample": {
+            "kind": "suppliers",
+            "source": "spend-vs-award.csv",
+            "order_by": "ratio",
+            "descending": true,
+            "n": 10,
+            "key": "supplier_norm",
+            "per_group_n": 3
+          },
+          "pbc": [
+            "Contract, award value and term for each eligible supplier",
+            "Variation and extension approvals",
+            "Extension evidence where the notice end date has passed or is near"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "R-07",
+      "objective": "Conclude whether waivers and exceptions are documented, approved by the right officer and made in advance, and which Rules clause governs waiver authority.",
+      "controls": [
+        {
+          "id": "C-07.1",
+          "control": "Every waiver or exception is fully documented, supported by a written exception report to the relevant board where competition is not excluded, and approved by the Section Officer for finance (S151 Officer) with recorded reasons.",
+          "cites": [
+            "rule:CPR-25",
+            "rule:CPR-26",
+            "rule:CPR-27"
+          ],
+          "owner": "S151 Officer"
+        },
+        {
+          "id": "C-07.2",
+          "control": "Waivers and exceptions are granted only by the officers the Rules name, in advance and in exceptional circumstances, at the approval level for the contract value.",
+          "cites": [
+            "rule:CPR-19",
+            "rule:CPR-20",
+            "rule:CPR-21",
+            "rule:CPR-22",
+            "rule:CPR-23",
+            "rule:CPR-24"
+          ],
+          "owner": "Monitoring Officer and/or S151 Officer"
+        },
+        {
+          "id": "C-07.3",
+          "control": "Contracts excluded from competition or let under a Purchasing Scheme without further competition have prior written Monitoring Officer approval, and board approval where required.",
+          "cites": [
+            "rule:CPR-75",
+            "rule:CPR-77",
+            "rule:CPR-82"
+          ],
+          "owner": "Monitoring Officer; relevant board"
+        }
+      ],
+      "tests": [
+        {
+          "id": "T-07.1",
+          "control": "C-07.1",
+          "step": "Obtain the waiver and exception register. Select exception reports and confirm each was documented, submitted in advance and carries the finance officer's approval recording that the circumstances were genuinely exceptional.",
+          "evidence": "Waiver and exception register, exception reports, finance officer approvals",
+          "cites": [
+            "rule:CPR-25",
+            "rule:CPR-26",
+            "rule:CPR-27"
+          ],
+          "sample": {
+            "kind": "none",
+            "note": "Document review of the waiver and exception register; items selected on receipt of the register."
+          },
+          "pbc": [
+            "Waiver and exception register for the period",
+            "Exception reports and approvals for selected items"
+          ]
+        },
+        {
+          "id": "T-07.2",
+          "control": "C-07.2",
+          "step": "Enquire which officers granted each waiver and exception, and check authority, timing and value band against the Rules. Ask management which of the two conflicting waiver-authority clauses it applies, and record the answer for the auditor.",
+          "evidence": "Waiver and exception register, delegation records, management response on clause conflict",
+          "cites": [
+            "rule:CPR-19",
+            "rule:CPR-20",
+            "rule:CPR-21",
+            "rule:CPR-22",
+            "rule:CPR-23",
+            "rule:CPR-24"
+          ],
+          "sample": {
+            "kind": "none",
+            "note": "Enquiry and register review; no transaction sample."
+          },
+          "pbc": [
+            "Scheme of delegation extract",
+            "Management statement on waiver authority"
+          ]
+        },
+        {
+          "id": "T-07.3",
+          "control": "C-07.3",
+          "step": "Obtain the list of contracts treated as exempt or let without further competition. For selected items, confirm prior written Monitoring Officer approval and relevant board approval where the contract value required it.",
+          "evidence": "Exemption list, Monitoring Officer approvals, board minutes",
+          "cites": [
+            "rule:CPR-75",
+            "rule:CPR-77",
+            "rule:CPR-82"
+          ],
+          "sample": {
+            "kind": "none",
+            "note": "Document review of exemption list; items selected on receipt."
+          },
+          "pbc": [
+            "List of contracts treated as exempt or let under a Purchasing Scheme",
+            "Approval records for selected contracts"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "R-08",
+      "objective": "Conclude whether the reasons for the choice of provider are recorded for placement payments exempt from competition.",
+      "controls": [
+        {
+          "id": "C-08.1",
+          "control": "Service Directors ensure a record of the reasons for the choice of provider is kept on the individual's case notes.",
+          "cites": [
+            "rule:CPR-81"
+          ],
+          "owner": "Service Directors"
+        }
+      ],
+      "tests": [
+        {
+          "id": "T-08.1",
+          "control": "C-08.1",
+          "step": "For each sampled provider, select placements paid in the period and inspect the case notes for a recorded reason for the choice of provider. Note recurring payments and any provider paid across several services.",
+          "evidence": "Case notes, placement panel or approval records, provider agreement",
+          "cites": [
+            "rule:CPR-81",
+            "metric:$.tests.high_value_suppliers.by_tag.care_or_education_placement.suppliers"
+          ],
+          "sample": {
+            "kind": "suppliers",
+            "source": "high-value-suppliers.csv",
+            "where": {
+              "dominant_tag": "care_or_education_placement"
+            },
+            "order_by": "total_gbp",
+            "descending": true,
+            "n": 5,
+            "key": "supplier_norm",
+            "per_group_n": 2
+          },
+          "pbc": [
+            "Case notes for the sampled placements",
+            "Placement approval records"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "R-09",
+      "objective": "Conclude whether the weaknesses behind the adverse opinion on personal budget payments have been addressed and whether they bear on supplier payments in scope, including payments to payees that may be direct-payment or prepaid channels.",
+      "controls": [
+        {
+          "id": "C-09.1",
+          "control": "Written evidence supports every purchase and payment, and agreed audit actions are implemented and monitored.",
+          "cites": [
+            "rule:CPR-32"
+          ],
+          "owner": "Not named in the Rules"
+        }
+      ],
+      "tests": [
+        {
+          "id": "T-09.1",
+          "control": "C-09.1",
+          "step": "Obtain the agreed actions, owners, due dates and implementation status from the personal budgets audit. Assess whether each weakness could apply to the supplier payments in scope and report any that do.",
+          "evidence": "Audit report, agreed action tracker, implementation evidence",
+          "cites": [
+            "rule:CPR-32"
+          ],
+          "sample": {
+            "kind": "none",
+            "note": "Enquiry and document review; no transaction sample."
+          },
+          "pbc": [
+            "Agreed actions and implementation status from the personal budgets audit",
+            "Follow-up monitoring reports"
+          ]
+        },
+        {
+          "id": "T-09.2",
+          "control": "C-09.1",
+          "step": "First ask the Council what each sampled payee represents and obtain its payment ledger for the period. The payments are drawn from the full payment history of each payee, not from the flagged value band, so the test can show whether the personal budget weaknesses bear on the channel. Where a payee is a direct-payment, allowance or prepaid-card channel, agree each sampled payment to the personal budget plan, allowance record or invoice, and check whether any weakness from the personal budgets audit applies. Where it is an ordinary purchase, record this for the auditor so the payments can be considered with the route sample.",
+          "evidence": "Payee descriptions, payee payment ledger, personal budget plans, allowance or top-up records, invoices, reconciliation of the channel to individuals",
+          "cites": [
+            "rule:CPR-32",
+            "metric:$.tests.threshold_clustering.tiers[0].count"
+          ],
+          "sample": {
+            "kind": "suppliers",
+            "source": "supplier-totals.csv",
+            "where": {
+              "supplier_norm": [
+                "E WALLET",
+                "PREPAID FINANCIAL SERVICES"
+              ]
+            },
+            "order_by": "total_gbp",
+            "descending": true,
+            "n": 2,
+            "key": "supplier_norm",
+            "per_group_n": 5
+          },
+          "pbc": [
+            "Description of what each sampled payee represents",
+            "Payee payment ledger for the period",
+            "Personal budget plans or allowance records for the sampled payments",
+            "Reconciliation of the channel to individual service users"
+          ]
+        }
+      ]
+    }
+  ],
+  "rules_not_tested": [
+    {
+      "reason": "statutory threshold parameter is null, so the boundary cannot be tested and no value has been invented",
+      "rule_ids": [
+        "CPR-01",
+        "CPR-13",
+        "CPR-29",
+        "CPR-30",
+        "CPR-61",
+        "CPR-64",
+        "CPR-65",
+        "CPR-73",
+        "CPR-74"
+      ]
+    },
+    {
+      "reason": "the spend data is itself the publication of expenditure over the floor; completeness against the ledger is outside this plan",
+      "rule_ids": [
+        "CPR-05"
+      ]
+    },
+    {
+      "reason": "budget provision, governance reporting, supplier suitability checks, Purchasing Scheme advice and record retention are held in council records, and no approved risk targets them this cycle",
+      "rule_ids": [
+        "CPR-03",
+        "CPR-08",
+        "CPR-09",
+        "CPR-28",
+        "CPR-31"
+      ]
+    },
+    {
+      "reason": "tender procedure steps (tender format, late tenders, opening, evaluation and award basis) are evidenced in procurement files outside the spend data, and no approved risk targets them this cycle",
+      "rule_ids": [
+        "CPR-14",
+        "CPR-15",
+        "CPR-16",
+        "CPR-17",
+        "CPR-18"
+      ]
+    },
+    {
+      "reason": "contract form, sealing, insurance, bond and contract clause content are evidenced in contract files outside the spend data, and no approved risk targets them this cycle",
+      "rule_ids": [
+        "CPR-33",
+        "CPR-34",
+        "CPR-36",
+        "CPR-37",
+        "CPR-38",
+        "CPR-39",
+        "CPR-40",
+        "CPR-41",
+        "CPR-42",
+        "CPR-43",
+        "CPR-44",
+        "CPR-45",
+        "CPR-46",
+        "CPR-47",
+        "CPR-48",
+        "CPR-49",
+        "CPR-50",
+        "CPR-51",
+        "CPR-52",
+        "CPR-53",
+        "CPR-54",
+        "CPR-55",
+        "CPR-56",
+        "CPR-57",
+        "CPR-58",
+        "CPR-59",
+        "CPR-60",
+        "CPR-62",
+        "CPR-63"
+      ]
+    },
+    {
+      "reason": "extension approval is tested by a risk the auditor rejected for this cycle; revisit next cycle",
+      "rule_ids": [
+        "CPR-78"
+      ]
+    },
+    {
+      "reason": "Provider Selection Regime process records sit outside the spend data, and no approved risk targets them this cycle",
+      "rule_ids": [
+        "CPR-76"
+      ]
+    }
+  ]
+}

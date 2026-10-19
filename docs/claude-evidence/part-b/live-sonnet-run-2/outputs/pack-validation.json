@@ -1,0 +1,30 @@
+{
+  "ready": true,
+  "sha256": {
+    "audit-plan.json": "b9bb8837d9203497266881740ae9bf39a5f46938fb8d15cd91f4773ec1a69dc9",
+    "rules.json": "e7391cad3b9c4b50e831aa781f3daaf583b845cd3bb6238805d3b96379e911d5",
+    "analytics.json": "5be3ac0b784215423139871c6452070e8613a630425376edc8ebebbf335828e0",
+    "risk-ratings.json": "191e21df4223b8e11307124da6ca7a3be77213ad926af74587ae64cf5f6f8a38",
+    "risk-register.md": "d002a934cc6f62985601134ac217c6dd3c064bf2a2555af2999fdb08a0986967",
+    "auditor-comments.md": "eb205b6f219d7a29dc19c3385016a2a8fa0de0b59f29c970e8ba3893a2787fe6",
+    "planning-memo.md": "9c6ab443bc72afae56758dd23a60b7c0e230187a6b6a0cd8f427912dfe9f8b5b",
+    "risk-control-matrix.md": "3662b28ad0c01e3368732164e3531e5c94422a7a87e78135e0815cfbefe89839",
+    "audit-program.md": "14011412c2898527e0b7b6bef81837578ee7849d9d24b9ab6131fcffc9342469",
+    "pack-figures.json": "3217017646dc12ca1ffb6b6eb894030698cbad686fca0cf148e287e3ce3d809a",
+    "samples/T-01.1.csv": "16c6ce4a7af28ba491da80f99a185744c9a21ce33b48a6d11e3ceace80e33bcd",
+    "samples/T-01.2.csv": "0ae912f99d00b6db66da919e6e8dc20c661e8f6093b3627e7d6fd8800c68bce2",
+    "samples/T-02.1.csv": "a22484c92a78eeedbee9519e0ab3c493102a81bee4da6689c898e0d2baa47126",
+    "samples/T-02.2.csv": "7fce9be69b4393b89dacd8d3eb23dc6c2fa4e0bd9bcebacfbc22d2a1ef93cab5",
+    "samples/T-02.3.csv": "e463efe016df529fa2c3b36a074091bff4d19f9f3ce511b7cc4042d2943bbc0d",
+    "samples/T-03.1.csv": "f5b9ca77cbb218cdce3c13f12a94e479cd75176e8781283d755d9a4d41bf2895",
+    "samples/T-03.3.csv": "435ebc1363eb2763d8a3a100d7808e22dc67e97d421a33d98fd813a7ac39efc4",
+    "samples/T-03.4.csv": "6ae81fc116ef77563d57289219c5c72b4f2d6cdf86591b6c59ceb9c6c84008cd",
+    "samples/T-04.1.csv": "6eeada2e7f42fe063bac8a60d4f73c73c9bc11d84474974755c8e57d57781ca2",
+    "samples/T-04.2.csv": "5a2ce98417225831473c1f6178627b9d7d66c6a29794c33ed25949f96e61631a",
+    "samples/T-04.3.csv": "6f3fda190afebc0afd67cca02de944c3ac51dca527dba36eedd17944831b461d",
+    "samples/T-04.4.csv": "eec7d517e8a7be62f5d82fac97e71223695224911489fbc165ec078d5d4ed0f2",
+    "samples/T-06.1.csv": "5a617841109d4b001bbabd21a7631b421961b162a7411cb056c2783111cf67cb",
+    "samples/T-08.1.csv": "41e8f7876751d1fcae380158e42dbb73388acf1815d1ab246a7910ce9e1aa73c",
+    "samples/T-09.2.csv": "6e5d68d4545fb2cf4378b938081e10de9f11b8194cc925a9209fb5820e2ab03b"
+  }
+}

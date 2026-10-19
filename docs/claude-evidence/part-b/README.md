@@ -18,3 +18,8 @@ signed-off outputs are unchanged.
 
 Free-plan limits: the service sleeps when idle, so the first request can take about a minute,
 and runs are lost on restart because there is no persistent disk.
+
+## Live mode (Claude API)
+
+- [live-sonnet-run-2](live-sonnet-run-2/README.md): Sonnet 5.5, end to end, QA 4/4, signed off.
+- [live-sonnet-run-1-blocked](live-sonnet-run-1-blocked/README.md): the earlier blocked run and its fix.

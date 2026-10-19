@@ -167,7 +167,7 @@ python3 -m venv .venv
 .venv/bin/python -m pytest -q --basetemp runtime/test-temp
 ```
 
-The builders are deterministic: rerunning them leaves the outputs byte-identical. All 48 tests pass.
+The builders are deterministic: rerunning them leaves the outputs byte-identical. All 53 tests pass.
 
 ## Part B: independent harness
 
@@ -179,11 +179,24 @@ it. See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for running, deploying and the 
 Status: **deployed** at https://procurement-audit-studio-8xno.onrender.com (Render free plan; the
 first request after idle can take about a minute). A hosted end-to-end run passed: start, register,
 decisions, planning, QA 4/4, sign-off and download ([evidence](docs/claude-evidence/part-b/README.md)).
+
+Live mode is also deployed and was run end to end with `claude-sonnet-5-5` on 2026-10-18 (PDT). The
+API key, model and an access passphrase are Render environment variables, never in the repository.
+In that run Claude wrote the history, the 9-risk register, the plan (three versions) and 11
+challenges, and Python built and checked each one. The reviewer approved 8 risks and rejected 1.
+QA passed 4/4 (571 sampled transactions) and the reviewer signed off.
+([evidence](docs/claude-evidence/part-b/live-sonnet-run-2/README.md)). Getting there took fixes,
+recorded in that evidence:
+- validator reports are returned to the agent for repair (up to 3 attempts);
+- examples are sent as structure only, after a Haiku run copied them;
+- the challenger and planner now follow their agent definitions: two rounds, then a closing pass,
+  with unresolved points going to the auditor.
+
 The prepared-evidence mode was
 fixed for the signed-off outputs in two ways. Each run now starts from the pre-decision judgments,
 because the root revision block is dropped in the run's own copy. A risk that cites no rule
 (R-04) is paired, as a labelled teaching baseline, with the clause the native planner chose
-(10.1). All 48 tests pass.
+(10.1). All 53 tests pass.
 
 ## Repository layout
 

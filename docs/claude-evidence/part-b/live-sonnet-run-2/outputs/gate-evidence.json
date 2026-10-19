@@ -1,0 +1,13 @@
+{
+  "ready": true,
+  "revision": 1,
+  "sha256": {
+    "risk-ratings.json": "191e21df4223b8e11307124da6ca7a3be77213ad926af74587ae64cf5f6f8a38",
+    "risk-register.md": "d002a934cc6f62985601134ac217c6dd3c064bf2a2555af2999fdb08a0986967",
+    "auditor-comments.md": "eb205b6f219d7a29dc19c3385016a2a8fa0de0b59f29c970e8ba3893a2787fe6",
+    "rules.json": "e7391cad3b9c4b50e831aa781f3daaf583b845cd3bb6238805d3b96379e911d5",
+    "analytics.json": "5be3ac0b784215423139871c6452070e8613a630425376edc8ebebbf335828e0",
+    "history.json": "396ea742bbbab1876d115b96d138b1a4aecb6683f28ade864ae420b004c51316"
+  },
+  "reason": "All recorded human decisions applied"
+}

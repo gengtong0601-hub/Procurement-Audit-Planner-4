@@ -1,0 +1,27 @@
+{
+  "generated_at": "2026-10-19",
+  "figures": {
+    "sample_recipe_values": [
+      2.0,
+      3.0,
+      5.0,
+      10.0,
+      1000.0,
+      25000.0,
+      500000.0
+    ],
+    "approved_in_scope": 8,
+    "not_in_scope": 1,
+    "register_risks": 8,
+    "controls": 13,
+    "tests": 20,
+    "sampled_transactions": 571,
+    "sampled_gbp": 29905585.63,
+    "rules_total": 82,
+    "rules_cited": 31,
+    "rules_not_tested": 51,
+    "register_revision": 1,
+    "decisions": 9,
+    "pbc_items": 41
+  }
+}

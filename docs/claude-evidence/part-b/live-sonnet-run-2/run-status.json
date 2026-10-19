@@ -1,0 +1,11 @@
+{
+  "mode": "live",
+  "stage": "complete",
+  "error": null,
+  "reviewer": "tony",
+  "planning_started": true,
+  "qa_verdict": "READY FOR SIGN-OFF",
+  "signed_by": "tony",
+  "signed_at": "2026-10-19T04:33:40.622524+00:00",
+  "review_sha256": "7b9f9ac2a36de2d6798096bcf1e4fe54993c811071e6200d17bc71f784afd72a"
+}
