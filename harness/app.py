@@ -38,8 +38,9 @@ def invalid(error):
 
 
 def require_live_access():
-    expected = os.environ.get('HARNESS_ACCESS_TOKEN', '')
-    actual = request.headers.get('Authorization', '').removeprefix('Bearer ')
+    # Dashboards and pasted text often carry a trailing space or newline; it is not part of the passphrase.
+    expected = os.environ.get('HARNESS_ACCESS_TOKEN', '').strip()
+    actual = request.headers.get('Authorization', '').removeprefix('Bearer ').strip()
     if not expected or not hmac.compare_digest(expected, actual):
         raise ValueError('Live mode needs the server access passphrase. Prepared mode remains available.')
 
