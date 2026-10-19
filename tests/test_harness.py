@@ -205,6 +205,14 @@ class HarnessTests(unittest.TestCase):
         with patch.dict(os.environ, env):
             ok = SimpleNamespace(stop_reason='end_turn', content=[text('```json\n{"ok": true}\n```')])
             self.assertEqual(provider.generate_json('fixture', {}, client=fake_client(ok)), {'ok': True})
+            wrapped = SimpleNamespace(stop_reason='end_turn', content=[text('Here is the JSON:\n{"ok": 1}\nDone.')])
+            self.assertEqual(provider.generate_json('fixture', {}, client=fake_client(wrapped)), {'ok': 1})
+            replies = iter([SimpleNamespace(stop_reason='end_turn', content=[text('not json')]), ok])
+            class Flaky:
+                def __enter__(self): return SimpleNamespace(get_final_message=lambda: next(replies))
+                def __exit__(self, *exc): return False
+            m = SimpleNamespace(stream=lambda **kwargs: Flaky())
+            self.assertEqual(provider.generate_json('fixture', {}, client=SimpleNamespace(messages=m, beta=SimpleNamespace(messages=m))), {'ok': True})
 
     def test_live_agent_gets_validator_report_and_retries(self):
         replies, sent = iter([{'v': 1}, {'v': 2}]), []
